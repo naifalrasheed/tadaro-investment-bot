@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Sentiment Analysis Configuration{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Sentiment Analysis Configuration</h2>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Your Sentiment Weight Configurations</h4>
+                </div>
+                <div class="card-body">
+                    {% if configs %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price Momentum</th>
+                                    <th>52-Week Range</th>
+                                    <th>YTD Performance</th>
+                                    <th>News Sentiment</th>
+                                    <th>ROTC</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configs %}
+                                <tr {% if config.is_default %}class="table-success"{% endif %}>
+                                    <td>{{ config.name }} {% if config.is_default %}<span class="badge bg-success">Default</span>{% endif %}</td>
+                                    <td>{{ config.price_momentum_weight }}%</td>
+                                    <td>{{ config.week_52_range_weight }}%</td>
+                                    <td>{{ config.ytd_performance_weight }}%</td>
+                                    <td>{{ config.news_sentiment_weight }}%</td>
+                                    <td>{{ config.rotc_weight }}%</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editConfigModal" 
+                                                data-config-id="{{ config.id }}"
+                                                data-name="{{ config.name }}"
+                                                data-price-momentum="{{ config.price_momentum_weight }}"
+                                                data-week-52-range="{{ config.week_52_range_weight }}"
+                                                data-ytd-performance="{{ config.ytd_performance_weight }}"
+                                                data-news-sentiment="{{ config.news_sentiment_weight }}"
+                                                data-rotc="{{ config.rotc_weight }}"
+                                                data-is-default="{{ config.is_default }}">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                            
+                                            <form action="{{ url_for('sentiment.apply_config', config_id=config.id) }}" method="POST" class="d-inline">
+                                                {% if symbol %}
+                                                <input type="hidden" name="symbol" value="{{ symbol }}">
+                                                {% endif %}
+                                                <button class="btn btn-outline-success" type="submit">
+                                                    <i class="fa fa-check"></i>
+                                                </button>
+                                            </form>
+                                            
+                                            {% if not config.is_default %}
+                                            <form action="{{ url_for('sentiment.delete_config', config_id=config.id) }}" method="POST" class="d-inline">
+                                                <button class="btn btn-outline-danger" type="submit" onclick="return confirm('Are you sure you want to delete this configuration?');">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">You haven't created any sentiment configurations yet.</p>
+                    {% endif %}
+                    
+                    <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#newConfigModal">
+                        <i class="fa fa-plus"></i> Create New Configuration
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Pre-defined Configurations</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price Momentum</th>
+                                    <th>52-Week Range</th>
+                                    <th>YTD Performance</th>
+                                    <th>News Sentiment</th>
+                                    <th>ROTC</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for preset in presets %}
+                                <tr>
+                                    <td>{{ preset.name }}</td>
+                                    <td>{{ preset.price_momentum_weight }}%</td>
+                                    <td>{{ preset.week_52_range_weight }}%</td>
+                                    <td>{{ preset.ytd_performance_weight }}%</td>
+                                    <td>{{ preset.news_sentiment_weight }}%</td>
+                                    <td>{{ preset.rotc_weight }}%</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <form action="{{ url_for('sentiment.apply_preset', preset_name=preset.name) }}" method="POST" class="d-inline">
+                                                {% if symbol %}
+                                                <input type="hidden" name="symbol" value="{{ symbol }}">
+                                                {% endif %}
+                                                <button class="btn btn-outline-success" type="submit">
+                                                    <i class="fa fa-check"></i> Apply
+                                                </button>
+                                            </form>
+                                            
+                                            <form action="{{ url_for('sentiment.config') }}" method="POST" class="d-inline">
+                                                {% if symbol %}
+                                                <input type="hidden" name="symbol" value="{{ symbol }}">
+                                                {% endif %}
+                                                <input type="hidden" name="name" value="{{ preset.name }}">
+                                                <input type="hidden" name="price_momentum_weight" value="{{ preset.price_momentum_weight }}">
+                                                <input type="hidden" name="week_52_range_weight" value="{{ preset.week_52_range_weight }}">
+                                                <input type="hidden" name="ytd_performance_weight" value="{{ preset.ytd_performance_weight }}">
+                                                <input type="hidden" name="news_sentiment_weight" value="{{ preset.news_sentiment_weight }}">
+                                                <input type="hidden" name="rotc_weight" value="{{ preset.rotc_weight }}">
+                                                <button class="btn btn-outline-primary" type="submit">
+                                                    <i class="fa fa-copy"></i> Save As
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Configuration Guide</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Component Descriptions</h5>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">
+                            <strong>Price Momentum (0-100%):</strong>
+                            <p class="mb-0 small">Measures recent price movement trends based on 5-day, 10-day, and 20-day price movements.</p>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>52-Week Range (0-100%):</strong>
+                            <p class="mb-0 small">Where the current price sits in the 52-week trading range. Higher score when closer to 52-week high.</p>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>YTD Performance (0-100%):</strong>
+                            <p class="mb-0 small">Year-to-date percentage return. Higher scores for better performance.</p>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>News Sentiment (0-100%):</strong>
+                            <p class="mb-0 small">Analysis of recent news articles sentiment from financial news and social media.</p>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>ROTC (0-100%):</strong>
+                            <p class="mb-0 small">Return on Total Capital, a fundamental metric measuring company's efficiency.</p>
+                        </li>
+                    </ul>
+                    
+                    <h5>Weight Guidelines</h5>
+                    <ul class="mb-0">
+                        <li>All weights must sum to exactly 100%</li>
+                        <li>Set any component to 0% to ignore it completely</li>
+                        <li>Higher weights indicate higher importance</li>
+                        <li>The weights determine how sentiment scores are calculated</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create New Configuration Modal -->
+<div class="modal fade" id="newConfigModal" tabindex="-1" aria-labelledby="newConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('sentiment.config') }}" method="POST" id="newConfigForm">
+                {% if symbol %}
+                <input type="hidden" name="symbol" value="{{ symbol }}">
+                {% endif %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newConfigModalLabel">Create New Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="configName" class="form-label">Configuration Name</label>
+                        <input type="text" class="form-control" id="configName" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Component Weights (Must sum to 100%)</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">Price Momentum</span>
+                            <input type="number" class="form-control weight-input" name="price_momentum_weight" value="40" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">52-Week Range</span>
+                            <input type="number" class="form-control weight-input" name="week_52_range_weight" value="20" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">YTD Performance</span>
+                            <input type="number" class="form-control weight-input" name="ytd_performance_weight" value="20" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">News Sentiment</span>
+                            <input type="number" class="form-control weight-input" name="news_sentiment_weight" value="10" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">ROTC</span>
+                            <input type="number" class="form-control weight-input" name="rotc_weight" value="10" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="total-display alert alert-info">
+                            Total: <span id="weightTotal">100</span>% 
+                            <span id="validationMessage" class="ms-2"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isDefault" name="is_default">
+                        <label class="form-check-label" for="isDefault">Set as default configuration</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Save Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Configuration Modal -->
+<div class="modal fade" id="editConfigModal" tabindex="-1" aria-labelledby="editConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('sentiment.config') }}" method="POST" id="editConfigForm">
+                {% if symbol %}
+                <input type="hidden" name="symbol" value="{{ symbol }}">
+                {% endif %}
+                <input type="hidden" name="config_id" id="editConfigId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editConfigModalLabel">Edit Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editConfigName" class="form-label">Configuration Name</label>
+                        <input type="text" class="form-control" id="editConfigName" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Component Weights (Must sum to 100%)</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">Price Momentum</span>
+                            <input type="number" class="form-control weight-input-edit" name="price_momentum_weight" id="editPriceMomentum" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">52-Week Range</span>
+                            <input type="number" class="form-control weight-input-edit" name="week_52_range_weight" id="editWeekRange" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">YTD Performance</span>
+                            <input type="number" class="form-control weight-input-edit" name="ytd_performance_weight" id="editYtdPerformance" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">News Sentiment</span>
+                            <input type="number" class="form-control weight-input-edit" name="news_sentiment_weight" id="editNewsSentiment" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">ROTC</span>
+                            <input type="number" class="form-control weight-input-edit" name="rotc_weight" id="editRotc" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="total-display alert alert-info">
+                            Total: <span id="editWeightTotal">100</span>% 
+                            <span id="editValidationMessage" class="ms-2"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editIsDefault" name="is_default">
+                        <label class="form-check-label" for="editIsDefault">Set as default configuration</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="editSubmitBtn">Update Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calculate weight total and validate
+function calculateTotal(inputs, totalElement, messageElement, submitBtn) {
+    let total = 0;
+    inputs.forEach(input => {
+        total += parseInt(input.value) || 0;
+    });
+    
+    totalElement.textContent = total;
+    
+    if (total === 100) {
+        messageElement.textContent = '✓ Valid';
+        messageElement.className = 'ms-2 text-success';
+        submitBtn.disabled = false;
+    } else {
+        messageElement.textContent = total < 100 ? 
+            `❌ Need ${100 - total}% more` : 
+            `❌ Remove ${total - 100}%`;
+        messageElement.className = 'ms-2 text-danger';
+        submitBtn.disabled = true;
+    }
+}
+
+// Initialize for new config form
+document.addEventListener('DOMContentLoaded', function() {
+    // New config form
+    const weightInputs = document.querySelectorAll('.weight-input');
+    const totalElement = document.getElementById('weightTotal');
+    const messageElement = document.getElementById('validationMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    weightInputs.forEach(input => {
+        input.addEventListener('input', () => {
+            calculateTotal(weightInputs, totalElement, messageElement, submitBtn);
+        });
+    });
+    
+    // Initialize total
+    calculateTotal(weightInputs, totalElement, messageElement, submitBtn);
+    
+    // Edit config form
+    const editWeightInputs = document.querySelectorAll('.weight-input-edit');
+    const editTotalElement = document.getElementById('editWeightTotal');
+    const editMessageElement = document.getElementById('editValidationMessage');
+    const editSubmitBtn = document.getElementById('editSubmitBtn');
+    
+    editWeightInputs.forEach(input => {
+        input.addEventListener('input', () => {
+            calculateTotal(editWeightInputs, editTotalElement, editMessageElement, editSubmitBtn);
+        });
+    });
+    
+    // Initialize edit modal data from button attributes
+    const editConfigModal = document.getElementById('editConfigModal');
+    if (editConfigModal) {
+        editConfigModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            
+            // Get data from button attributes
+            const configId = button.getAttribute('data-config-id');
+            const name = button.getAttribute('data-name');
+            const priceMomentum = button.getAttribute('data-price-momentum');
+            const weekRange = button.getAttribute('data-week-52-range');
+            const ytdPerformance = button.getAttribute('data-ytd-performance');
+            const newsSentiment = button.getAttribute('data-news-sentiment');
+            const rotc = button.getAttribute('data-rotc');
+            const isDefault = button.getAttribute('data-is-default') === 'True';
+            
+            // Set form values
+            document.getElementById('editConfigId').value = configId;
+            document.getElementById('editConfigName').value = name;
+            document.getElementById('editPriceMomentum').value = priceMomentum;
+            document.getElementById('editWeekRange').value = weekRange;
+            document.getElementById('editYtdPerformance').value = ytdPerformance;
+            document.getElementById('editNewsSentiment').value = newsSentiment;
+            document.getElementById('editRotc').value = rotc;
+            document.getElementById('editIsDefault').checked = isDefault;
+            
+            // Calculate total
+            calculateTotal(editWeightInputs, editTotalElement, editMessageElement, editSubmitBtn);
+        });
+    }
+});
+</script>
+{% endblock %}

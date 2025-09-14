@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block title %}Sector Analysis - Naif Al-Rasheed Model{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Sector Analysis - {{ market|upper }} Market</h1>
+    
+    <div class="mb-4">
+        <a href="{{ url_for('naif_model_screen') }}" class="btn btn-outline-primary">&laquo; Back to Naif Model</a>
+        
+        <!-- Market selector -->
+        <div class="btn-group ms-3">
+            <a href="{{ url_for('naif_sector_analysis', market='us') }}" class="btn btn-{{ 'primary' if market == 'us' else 'outline-primary' }}">US Market</a>
+            <a href="{{ url_for('naif_sector_analysis', market='saudi') }}" class="btn btn-{{ 'primary' if market == 'saudi' else 'outline-primary' }}">Saudi Market</a>
+        </div>
+    </div>
+    
+    {% if macro_analysis %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Macro-Economic Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Growth Outlook</h6>
+                            <div class="progress mb-3" style="height: 25px;">
+                                {% set outlook_color = 'success' if macro_analysis.growth_outlook_score >= 70 else 'primary' if macro_analysis.growth_outlook_score >= 55 else 'warning' if macro_analysis.growth_outlook_score >= 45 else 'danger' %}
+                                <div class="progress-bar bg-{{ outlook_color }}" role="progressbar" 
+                                     style="width: {{ macro_analysis.growth_outlook_score }}%" 
+                                     aria-valuenow="{{ macro_analysis.growth_outlook_score }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ macro_analysis.growth_outlook_score|round(1) }}
+                                </div>
+                            </div>
+                            <p><strong>Growth Regime:</strong> {{ macro_analysis.growth_regime }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Key Economic Indicators</h6>
+                            <ul>
+                                {% for indicator, value in macro_analysis.indicators.items() %}
+                                <li><strong>{{ indicator|capitalize }}:</strong> {{ value|round(2) }}{% if indicator == 'gdp_growth' or indicator == 'inflation' or indicator == 'vision_2030_progress' or indicator == 'unemployment' %}%{% endif %}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <p>{{ macro_analysis.explanation }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Top Recommended Sectors</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">The following sectors are recommended by the Naif Al-Rasheed model based on growth, momentum, profitability, and valuation metrics.</p>
+                    
+                    <div class="row">
+                        {% for sector in top_sectors %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {{ 'border-success' if sector.tier == 'top' else 'border-info' if sector.tier == 'solid' else 'border-primary' if sector.tier == 'strategic' else 'border-secondary' }}">
+                                <div class="card-header {{ 'bg-success text-white' if sector.tier == 'top' else 'bg-info text-white' if sector.tier == 'solid' else 'bg-primary text-white' if sector.tier == 'strategic' else '' }}">
+                                    <h6 class="mb-0">{{ sector.name }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <h3 class="text-center mb-3">{{ sector.score|round(1) }}</h3>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div class="progress-bar {{ 'bg-success' if sector.score >= 70 else 'bg-info' if sector.score >= 60 else 'bg-primary' if sector.score >= 50 else 'bg-warning' }}" 
+                                             role="progressbar" style="width: {{ sector.score }}%" 
+                                             aria-valuenow="{{ sector.score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <p class="card-text small">{{ sector.description }}</p>
+                                </div>
+                                <div class="card-footer text-muted">
+                                    <span class="badge {{ 'bg-success' if sector.tier == 'top' else 'bg-info' if sector.tier == 'solid' else 'bg-primary' if sector.tier == 'strategic' else 'bg-secondary' }}">
+                                        {{ sector.tier|capitalize }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>All Sectors Ranked by Score</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Sector</th>
+                                    <th>Score</th>
+                                    <th>Growth</th>
+                                    <th>Momentum</th>
+                                    <th>Profitability</th>
+                                    <th>Valuation</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sector, score in sectors %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ sector }}</td>
+                                        <td><strong>{{ score|round(1) }}</strong></td>
+                                        <td>
+                                            {% if sector_metrics and sector_metrics[sector] %}
+                                                {{ sector_metrics[sector].growth|round(1) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if sector_metrics and sector_metrics[sector] %}
+                                                {{ sector_metrics[sector].momentum|round(1) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if sector_metrics and sector_metrics[sector] %}
+                                                {{ sector_metrics[sector].profitability|round(1) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if sector_metrics and sector_metrics[sector] %}
+                                                {{ sector_metrics[sector].valuation|round(1) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if sector in [s.name for s in top_sectors if s.tier == 'top'] %}
+                                                <span class="badge bg-success">Top Pick</span>
+                                            {% elif sector in [s.name for s in top_sectors if s.tier == 'solid'] %}
+                                                <span class="badge bg-info">Solid</span>
+                                            {% elif sector in [s.name for s in top_sectors if s.tier == 'strategic'] %}
+                                                <span class="badge bg-primary">Strategic</span>
+                                            {% elif score > 40 %}
+                                                <span class="badge bg-light text-dark">Neutral</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Avoid</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Visualization</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:400px; width:100%">
+                        <canvas id="sectorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if market_insights %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>{{ market|upper }} Market Insights</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Market Overview</h6>
+                            <p>{{ market_insights.overview }}</p>
+                            
+                            <h6>Key Trends</h6>
+                            <ul>
+                                {% for trend in market_insights.trends %}
+                                <li>{{ trend }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Market Metrics</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for metric, value in market_insights.metrics.items() %}
+                                        <tr>
+                                            <th>{{ metric|capitalize }}</th>
+                                            <td>{{ value }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get data from template
+    const sectors = [{% for sector, score in sectors %}'{{ sector }}',{% endfor %}];
+    const scores = [{% for sector, score in sectors %}{{ score }},{% endfor %}];
+    const colors = scores.map(score => {
+        if (score > 70) return 'rgba(40, 167, 69, 0.7)';
+        if (score > 60) return 'rgba(23, 162, 184, 0.7)';
+        if (score > 50) return 'rgba(13, 110, 253, 0.7)';
+        if (score > 40) return 'rgba(255, 193, 7, 0.7)';
+        return 'rgba(220, 53, 69, 0.7)';
+    });
+    
+    // Create chart
+    const ctx = document.getElementById('sectorChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sectors,
+            datasets: [{
+                label: 'Sector Score',
+                data: scores,
+                backgroundColor: colors,
+                borderColor: colors.map(c => c.replace('0.7', '1')),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Score (0-100)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Sector'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: '{{ market|upper }} Market Sector Performance Scores'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Naif Al-Rasheed Investment Model{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Naif Al-Rasheed Investment Model</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>About the Model</h5>
+                </div>
+                <div class="card-body">
+                    <p>The Naif Al-Rasheed Investment Model is a comprehensive multi-market investment strategy focused on finding high-quality companies with strong fundamentals, excellent management, and attractive valuations across both US and Saudi markets.</p>
+                    
+                    <h6>Model Stages:</h6>
+                    <ol>
+                        <li><strong>Macro Analysis:</strong> Evaluates economic conditions and growth indicators</li>
+                        <li><strong>Sector Ranking:</strong> Identifies top-performing sectors based on growth, momentum, and profitability</li>
+                        <li><strong>Fundamental Screening:</strong> Filters companies based on ROTC, revenue growth, and other financial metrics</li>
+                        <li><strong>Management Quality:</strong> Assesses management team effectiveness and capital allocation</li>
+                        <li><strong>Valuation Analysis:</strong> Evaluates stocks based on attractive pricing and margin of safety</li>
+                        <li><strong>Monte Carlo Simulation:</strong> Projects potential portfolio outcomes using probabilistic modeling</li>
+                        <li><strong>Portfolio Construction:</strong> Creates a diversified portfolio with optimized weightings</li>
+                    </ol>
+                    
+                    <a href="{{ url_for('naif_sector_analysis') }}" class="btn btn-outline-primary">View Sector Analysis</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Screening Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('naif_model_screen') }}">
+                        <div class="form-group mb-3">
+                            <label for="portfolio_name">Portfolio Name</label>
+                            <input type="text" class="form-control" id="portfolio_name" name="portfolio_name" value="Naif Al-Rasheed Model Portfolio">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="market"><strong>Market Selection</strong></label>
+                            <select class="form-control" id="market" name="market">
+                                <option value="us">US Market</option>
+                                <option value="saudi">Saudi Market</option>
+                            </select>
+                            <small class="form-text text-muted">Choose which market to analyze</small>
+                        </div>
+                        
+                        <div class="market-specific-help mt-2 mb-3">
+                            <div id="us-market-info" class="alert alert-info">
+                                <strong>US Market:</strong> Analyzes US equities using Russell 3000 and S&P 500 stock universe
+                            </div>
+                            <div id="saudi-market-info" class="alert alert-info" style="display:none;">
+                                <strong>Saudi Market:</strong> Analyzes Saudi Tadawul listed companies
+                            </div>
+                        </div>
+                        
+                        <h6 class="mt-4">Fundamental Criteria</h6>
+                        <div class="form-group mb-3">
+                            <label for="min_rotc">Minimum ROTC (%)</label>
+                            <input type="text" class="form-control" id="min_rotc" name="min_rotc" value="{{ params.min_rotc }}">
+                            <small class="form-text text-muted">Return on Tangible Capital</small>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="min_market_cap">Minimum Market Cap <span class="currency-label">($)</span></label>
+                            <input type="text" class="form-control" id="min_market_cap" name="min_market_cap" value="{{ params.min_market_cap }}">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="min_revenue_growth">Minimum Revenue Growth (%)</label>
+                            <input type="text" class="form-control" id="min_revenue_growth" name="min_revenue_growth" value="{{ params.min_revenue_growth }}">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="min_management_score">Minimum Management Quality Score</label>
+                            <input type="text" class="form-control" id="min_management_score" name="min_management_score" value="{{ params.min_management_score }}">
+                            <small class="form-text text-muted">Score from 0-100 based on historical execution, capital allocation, and consistency</small>
+                        </div>
+                        
+                        <h6 class="mt-4">Valuation Criteria</h6>
+                        <div class="form-group mb-3">
+                            <label for="max_pe_ratio">Maximum P/E Ratio</label>
+                            <input type="text" class="form-control" id="max_pe_ratio" name="max_pe_ratio" value="{{ params.max_pe_ratio }}">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="min_dividend_yield">Minimum Dividend Yield (%)</label>
+                            <input type="text" class="form-control" id="min_dividend_yield" name="min_dividend_yield" value="{{ params.min_dividend_yield }}">
+                        </div>
+                        
+                        <h6 class="mt-4">Portfolio Construction</h6>
+                        <div class="form-group mb-3">
+                            <label for="min_sectors">Minimum Sectors</label>
+                            <input type="number" class="form-control" id="min_sectors" name="min_sectors" value="{{ params.min_sectors|default(5) }}" min="3" max="10">
+                            <small class="form-text text-muted">Minimum number of sectors for diversification</small>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="cash_allocation">Cash Allocation (%)</label>
+                            <input type="number" class="form-control" id="cash_allocation" name="cash_allocation" value="{{ params.cash_allocation|default(5) }}" min="0" max="20">
+                            <small class="form-text text-muted">Percentage of portfolio to keep in cash reserves</small>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="run_simulation" name="run_simulation" checked>
+                                <label class="form-check-label" for="run_simulation">
+                                    Run Monte Carlo Simulation (1000 iterations)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Run Screening</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        {% if results %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Screening Results</h5>
+                </div>
+                <div class="card-body">
+                    {% if results.success %}
+                        <div class="alert alert-success">
+                            <h6>Screening Completed Successfully</h6>
+                            <p>{{ results.selected_companies|length }} stocks selected for portfolio in the {{ results.market }} market.</p>
+                        </div>
+                        
+                        <h6>Selected Sectors:</h6>
+                        <ul>
+                            {% for sector in results.selected_sectors %}
+                                <li>{{ sector.name }} (Score: {{ sector.score|round(1) }})</li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <h6>Selected Companies:</h6>
+                        {% if results.selected_companies %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Score</th>
+                                            <th>ROTC</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for company in results.valuated_companies %}
+                                            <tr>
+                                                <td>{{ company.symbol }}</td>
+                                                <td>{{ company.combined_score|round(1) }}</td>
+                                                <td>{{ company.rotc|round(1) }}%</td>
+                                                <td>
+                                                    <a href="{{ url_for('naif_technical_analysis', symbol=company.symbol) }}" class="btn btn-sm btn-info">Analysis</a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Visual Representation -->
+                            {% if results.visualizations %}
+                                <h6 class="mt-4">Portfolio Visualization:</h6>
+                                
+                                {% if results.visualizations.sector_allocation_pie %}
+                                <div class="mb-3">
+                                    <img src="data:image/png;base64,{{ results.visualizations.sector_allocation_pie }}" 
+                                         class="img-fluid" alt="Sector Allocation">
+                                </div>
+                                {% endif %}
+                                
+                                {% if results.visualizations.monte_carlo_simulation %}
+                                <div class="mb-3">
+                                    <img src="data:image/png;base64,{{ results.visualizations.monte_carlo_simulation }}" 
+                                         class="img-fluid" alt="Monte Carlo Simulation">
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <p>No companies passed the screening criteria.</p>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <h6>Screening Failed</h6>
+                            <p>{{ results.message }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Dynamic UI based on market selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const marketSelect = document.getElementById('market');
+        const currencyLabels = document.querySelectorAll('.currency-label');
+        const usMarketInfo = document.getElementById('us-market-info');
+        const saudiMarketInfo = document.getElementById('saudi-market-info');
+        
+        // Set initial values
+        updateMarketUI(marketSelect.value);
+        
+        // Update UI when market changes
+        marketSelect.addEventListener('change', function() {
+            updateMarketUI(this.value);
+        });
+        
+        function updateMarketUI(market) {
+            // Update currency labels
+            currencyLabels.forEach(label => {
+                label.textContent = market === 'us' ? '($)' : '(SAR)';
+            });
+            
+            // Update market info visibility
+            usMarketInfo.style.display = market === 'us' ? 'block' : 'none';
+            saudiMarketInfo.style.display = market === 'saudi' ? 'block' : 'none';
+            
+            // Update form fields based on market
+            const minRotcField = document.getElementById('min_rotc');
+            const maxPeField = document.getElementById('max_pe_ratio');
+            const minDividendField = document.getElementById('min_dividend_yield');
+            
+            if (market === 'us') {
+                minRotcField.value = 15.0;
+                maxPeField.value = 25.0;
+                minDividendField.value = 1.0;
+                document.getElementById('min_market_cap').value = 1000000000;
+            } else {
+                minRotcField.value = 12.0;
+                maxPeField.value = 20.0;
+                minDividendField.value = 2.0;
+                document.getElementById('min_market_cap').value = 500000000;
+            }
+        }
+    });
+</script>
+{% endblock %}

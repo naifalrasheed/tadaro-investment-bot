@@ -1,0 +1,598 @@
+{% extends 'base.html' %}
+
+{% block title %}Technical Analysis - {{ symbol }} - {{ market|upper }} Market{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Technical Analysis for {{ symbol }} <span class="badge bg-primary">{{ market|upper }}</span></h1>
+    
+    <div class="mb-4">
+        <a href="{{ url_for('naif_model_screen') }}" class="btn btn-outline-primary">&laquo; Back to Naif Model</a>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Company Information</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ info.name|default(symbol) }}</h4>
+                    <p class="text-muted">{{ info.sector|default('N/A') }}</p>
+                    
+                    <div class="mb-3">
+                        <strong>Current Price:</strong> {{ info.price|default('N/A') }} {{ currency_symbol }}
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Market Cap</td>
+                                    <td>{{ (info.market_cap / 1000000000)|round(2) if info.market_cap else 'N/A' }} B {{ currency_symbol }}</td>
+                                </tr>
+                                <tr>
+                                    <td>P/E Ratio</td>
+                                    <td>{{ info.pe_ratio|default('N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <td>ROTC (%)</td>
+                                    <td>{{ info.rotc|round(1)|default('N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Revenue Growth</td>
+                                    <td>{{ info.revenue_growth|round(1)|default('N/A') }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Dividend Yield</td>
+                                    <td>{{ info.dividend_yield|default('N/A') }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>52-Week Range</td>
+                                    <td>{{ info.low_52w|default('N/A') }} - {{ info.high_52w|default('N/A') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            {% if fundamental_rating %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Fundamental Rating</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-4 
+                        {% if fundamental_rating >= 75 %}text-success
+                        {% elif fundamental_rating >= 60 %}text-primary
+                        {% elif fundamental_rating >= 40 %}text-warning
+                        {% else %}text-danger{% endif %}">
+                        {{ fundamental_rating|round(1) }}
+                    </div>
+                    <p class="lead">
+                        {% if fundamental_rating >= 75 %}Excellent
+                        {% elif fundamental_rating >= 60 %}Good
+                        {% elif fundamental_rating >= 40 %}Fair
+                        {% else %}Poor{% endif %}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Technical Indicators</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% set tech_score = technical_score|default(50) %}
+                        <div class="display-4 
+                            {% if tech_score >= 75 %}text-success
+                            {% elif tech_score >= 50 %}text-primary
+                            {% elif tech_score >= 25 %}text-warning
+                            {% else %}text-danger{% endif %}">
+                            {{ tech_score|round(1) }}
+                        </div>
+                        <p class="lead">
+                            {% if tech_score >= 75 %}Strong Buy
+                            {% elif tech_score >= 50 %}Buy
+                            {% elif tech_score >= 25 %}Hold
+                            {% else %}Sell{% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Price Momentum</h6>
+                            <div class="progress mb-3" style="height: 25px;">
+                                {% set momentum_score = technical_components.momentum_score|default(technical_score * 0.9) %}
+                                {% set momentum_score = [momentum_score, 100]|min %}
+                                <div class="progress-bar 
+                                    {% if momentum_score >= 70 %}bg-success
+                                    {% elif momentum_score >= 40 %}bg-info
+                                    {% elif momentum_score >= 20 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ momentum_score }}%" 
+                                    aria-valuenow="{{ momentum_score }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                    {{ momentum_score|round(1) }}
+                                </div>
+                            </div>
+                            
+                            <h6>Volume Trend</h6>
+                            <div class="progress mb-3" style="height: 25px;">
+                                {% set volume_score = technical_components.volume_score|default((technical_score - 10) * 1.1) %}
+                                {% set volume_score = [volume_score, 100]|min %}
+                                <div class="progress-bar 
+                                    {% if volume_score >= 70 %}bg-success
+                                    {% elif volume_score >= 40 %}bg-info
+                                    {% elif volume_score >= 20 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ volume_score }}%" 
+                                    aria-valuenow="{{ volume_score }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                    {{ volume_score|round(1) }}
+                                </div>
+                            </div>
+                            
+                            <h6>Moving Averages</h6>
+                            <div class="progress mb-3" style="height: 25px;">
+                                {% set ma_score = technical_components.ma_score|default((technical_score + 10) * 0.9) %}
+                                {% set ma_score = [ma_score, 100]|min %}
+                                <div class="progress-bar 
+                                    {% if ma_score >= 70 %}bg-success
+                                    {% elif ma_score >= 40 %}bg-info
+                                    {% elif ma_score >= 20 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ ma_score }}%" 
+                                    aria-valuenow="{{ ma_score }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                    {{ ma_score|round(1) }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if historical and historical.data|length > 0 %}
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Recent Performance</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    {% set current_price = historical.data[-1].close %}
+                                    {% set month_ago_idx = [historical.data|length - 20, 0]|max %}
+                                    {% set month_price = historical.data[month_ago_idx].close %}
+                                    {% set month_change = ((current_price / month_price - 1) * 100)|round(2) %}
+                                    
+                                    {% set three_month_idx = [historical.data|length - 60, 0]|max %}
+                                    {% set three_month_price = historical.data[three_month_idx].close %}
+                                    {% set three_month_change = ((current_price / three_month_price - 1) * 100)|round(2) %}
+                                    
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            1-Month Return
+                                            <span class="badge {% if month_change >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ month_change }}%
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            3-Month Return
+                                            <span class="badge {% if three_month_change >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ three_month_change }}%
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Price from 52w Low
+                                            {% if info.low_52w and current_price %}
+                                                {% set from_low = ((current_price / info.low_52w - 1) * 100)|round(2) %}
+                                                <span class="badge bg-info">+{{ from_low }}%</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">N/A</span>
+                                            {% endif %}
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Price from 52w High
+                                            {% if info.high_52w and current_price %}
+                                                {% set from_high = ((current_price / info.high_52w - 1) * 100)|round(2) %}
+                                                <span class="badge {% if from_high >= 0 %}bg-success{% else %}bg-warning{% endif %}">{{ from_high }}%</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">N/A</span>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if signal_summary %}
+                    <div class="alert alert-info mt-3">
+                        <h6 class="alert-heading">Technical Analysis Summary</h6>
+                        <p>{{ signal_summary }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Detailed Technical Analysis Data -->
+                    <div class="card mt-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Detailed Technical Analysis</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Trend Analysis</h6>
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Timeframe</th>
+                                                <th>Trend</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Short-term</td>
+                                                <td>
+                                                    <span class="badge 
+                                                        {% if technical_components.short_term == 'bullish' %}bg-success
+                                                        {% elif technical_components.short_term == 'bearish' %}bg-danger
+                                                        {% else %}bg-secondary{% endif %}">
+                                                        {{ technical_components.short_term|default('neutral')|title }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Medium-term</td>
+                                                <td>
+                                                    <span class="badge 
+                                                        {% if technical_components.medium_term == 'bullish' %}bg-success
+                                                        {% elif technical_components.medium_term == 'bearish' %}bg-danger
+                                                        {% else %}bg-secondary{% endif %}">
+                                                        {{ technical_components.medium_term|default('neutral')|title }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Long-term</td>
+                                                <td>
+                                                    <span class="badge 
+                                                        {% if technical_components.long_term == 'bullish' %}bg-success
+                                                        {% elif technical_components.long_term == 'bearish' %}bg-danger
+                                                        {% else %}bg-secondary{% endif %}">
+                                                        {{ technical_components.long_term|default('neutral')|title }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6>Key Indicators</h6>
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <td>RSI</td>
+                                                <td>
+                                                    <span class="
+                                                        {% if technical_components.rsi > 70 %}text-danger
+                                                        {% elif technical_components.rsi < 30 %}text-warning
+                                                        {% else %}text-success{% endif %}">
+                                                        {{ technical_components.rsi|default(50)|round(1) }}
+                                                    </span>
+                                                    {% if technical_components.rsi > 70 %}
+                                                        <small class="text-muted">(Overbought)</small>
+                                                    {% elif technical_components.rsi < 30 %}
+                                                        <small class="text-muted">(Oversold)</small>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% if technical_components.support %}
+                                            <tr>
+                                                <td>Support Level</td>
+                                                <td>{{ technical_components.support|round(2) }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if technical_components.resistance %}
+                                            <tr>
+                                                <td>Resistance Level</td>
+                                                <td>{{ technical_components.resistance|round(2) }}</td>
+                                            </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Technical Analysis Methodology Card -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Technical Analysis Calculation Methodology</h6>
+                        </div>
+                        <div class="card-body">
+                            <p>The technical score is calculated using a comprehensive analysis of multiple factors:</p>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Component</th>
+                                            <th>Calculation Method</th>
+                                            <th>Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Sentiment Analysis</td>
+                                            <td>Machine learning prediction of price direction based on pattern recognition</td>
+                                            <td>20%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Trend Analysis</td>
+                                            <td>
+                                                Short-term trend (5-20 days): ±10 points<br>
+                                                Medium-term trend (20-50 days): ±15 points<br>
+                                                Long-term trend (50+ days): ±5 points
+                                            </td>
+                                            <td>30%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Technical Indicators</td>
+                                            <td>
+                                                RSI (Oversold/Overbought): ±5 points<br>
+                                                Moving average crossovers: ±10 points<br>
+                                                Price relative to key MAs: ±5 points each
+                                            </td>
+                                            <td>25%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Volume Analysis</td>
+                                            <td>Recent volume changes relative to historical average</td>
+                                            <td>10%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Volatility Assessment</td>
+                                            <td>Historical volatility compared to market and sector averages</td>
+                                            <td>5%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Price Pattern Recognition</td>
+                                            <td>ML model identifies common patterns (double bottom, head & shoulders, etc.)</td>
+                                            <td>10%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <h6 class="mt-3 mb-2">Score Interpretation:</h6>
+                            <ul class="mb-3">
+                                <li><strong>75-100:</strong> <span class="text-success">Strong Buy</span> - Excellent technical setup with multiple bullish signals</li>
+                                <li><strong>50-75:</strong> <span class="text-primary">Buy</span> - Positive technical indicators suggest favorable entry point</li>
+                                <li><strong>25-50:</strong> <span class="text-warning">Hold</span> - Mixed signals or transition period, monitor closely</li>
+                                <li><strong>0-25:</strong> <span class="text-danger">Sell</span> - Multiple bearish indicators suggest avoiding entry or reducing position</li>
+                            </ul>
+                            
+                            <h6 class="mt-3 mb-2">Timeframe Considerations:</h6>
+                            <p class="small">Technical scores represent different timeframes: Recent Performance indicators (1-3 months) may sometimes conflict with longer-term indicators. This is normal in markets and reflects short-term volatility within longer-term trends.</p>
+                            
+                            <h6 class="mt-3 mb-2">Naif Al-Rasheed Model Context:</h6>
+                            <p class="small">In the Naif Al-Rasheed investment model, technical analysis is complementary to fundamental criteria (ROTC > 15%, P/E < 25, etc.). Strong technicals combined with solid fundamentals represent the most favorable investment candidates.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Price Chart (6 Months)</h5>
+                </div>
+                <div class="card-body">
+                    {% if historical and historical.data|length > 0 %}
+                        <div class="chart-container" style="position: relative; height:400px; width:100%">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                        <div class="small text-muted mt-2">
+                            Historical data points: {{ historical.data|length }} 
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No historical data available for this symbol.</p>
+                        <div class="alert alert-warning">
+                            <h6>Debug Information</h6>
+                            <p>Historical data structure: {{ historical|tojson }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if investment_thesis %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Naif Al-Rasheed Investment Thesis</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ investment_thesis }}</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6>Strengths</h6>
+                            <ul>
+                                {% for strength in strengths %}
+                                <li>{{ strength }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Concerns</h6>
+                            <ul>
+                                {% for concern in concerns %}
+                                <li>{{ concern }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if historical and historical.data|length > 0 %}
+    // Extract data for chart
+    const dates = [{% for item in historical.data %}'{{ item.date }}',{% endfor %}];
+    const prices = [{% for item in historical.data %}{{ item.close }},{% endfor %}];
+    const volumes = [{% for item in historical.data %}{{ item.volume }},{% endfor %}];
+    
+    // Calculate 20-day moving average
+    const ma20 = [];
+    for (let i = 0; i < prices.length; i++) {
+        if (i < 20) {
+            ma20.push(null);
+        } else {
+            const window = prices.slice(i-20, i);
+            const avg = window.reduce((sum, val) => sum + val, 0) / 20;
+            ma20.push(avg);
+        }
+    }
+    
+    // Calculate 50-day moving average
+    const ma50 = [];
+    for (let i = 0; i < prices.length; i++) {
+        if (i < 50) {
+            ma50.push(null);
+        } else {
+            const window = prices.slice(i-50, i);
+            const avg = window.reduce((sum, val) => sum + val, 0) / 50;
+            ma50.push(avg);
+        }
+    }
+    
+    // Create chart
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: '{{ symbol }} Price',
+                    data: prices,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '20-Day MA',
+                    data: ma20,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: false,
+                    pointRadius: 0,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '50-Day MA',
+                    data: ma50,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: false,
+                    pointRadius: 0,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Volume',
+                    data: volumes,
+                    backgroundColor: 'rgba(153, 102, 255, 0.3)',
+                    borderColor: 'rgba(153, 102, 255, 0.8)',
+                    borderWidth: 1,
+                    type: 'bar',
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            stacked: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Price ({{ currency_symbol }})'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Volume'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: '{{ symbol }} - 6 Month Price History with Technical Indicators'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                },
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

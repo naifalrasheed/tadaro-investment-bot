@@ -1,0 +1,108 @@
+Project Requirements Response – AI Investment Bot
+A. Infrastructure Requirements
+* AWS Account: Yes, existing account and I ran these earlier and it is ready now (PS C:\Users\alras> aws configure
+* AWS Access Key ID [****************0843]: 593793060843
+* AWS Secret Access Key [****************ount]:
+* PS C:\Users\alras> AWS configure
+* AWS Access Key ID [****************0843]: AKIAYUQGTB7VUCADSIPF
+* AWS Secret Access Key [****************ount]: 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
+* Default region name [us-east-1]: us-east-1
+* Default output format [json]: json
+* PS C:\Users\alras> aws sts get-caller-identity
+* {
+*     "UserId": "AIDAYUQGTB7VUWB323UCO",
+*     "Account": "593793060843",
+*     "Arn": "arn:aws:iam::593793060843:user/Investment"
+* })
+
+* Billing/Admin Access: I have full billing/admin access.
+* Preferred Region: us-east-1 (for lowest costs).
+* Budget: Comfortable with ~$75/month to start.
+* Separate Account?: Use existing account for now
+* Domain & DNS: Prefer custom domain ? [tadaro.ai]. Registrar: [GoDaddy]. Planned URL: www.tadaro.ai
+* Security & Compliance:
+o No strict compliance frameworks at MVP (not FINRA/SEC regulated yet).
+o Data storage: US acceptable for now.
+o User data retention: keep user analysis for 12 months initially.
+o Admin 2FA: simple.
+o No special certifications needed at MVP.
+
+B. API Keys & External Services
+* Current API Keys:
+o Claude API: Valid, usage limit for all user at 50 USD per month.
+o TwelveData: Key 71cdbb03b46645628e8416eeb4836c99 active.
+o Alpha Vantage: Free tier, confirm usable.
+o Yahoo Finance: Acceptable via yfinance.
+o Tadawul: TBD, will investigate additional APIs.
+* New Services:
+o Anthropic Financial Services: Request access.
+o Email Service: Microsoft 365 email essentials.
+o SMS Service: Not needed at MVP.
+o Additional Data Providers: Not required at MVP.
+
+C. Database & Data Requirements
+* Production DB:
+o Expected Users: ~20 beta users.
+o Backup: Daily, 7-day retention.
+o Multi-region: Not required initially.
+o Migration: Brief downtime acceptable.
+* Data Sources:
+o Historical: 10 years of stock data.
+o Real-time: 15-minute delay acceptable.
+o Markets: Saudi + US.
+o Retention: User analysis kept for 12 months.
+
+D. Application Configuration
+* Authentication:
+o Registration: Invite-only for beta.
+o Social Logins: Google, Apple, Amazon, & Microsoft.
+o Email Verification: Required.
+o Password Policy: Minimum 8 characters + complexity.
+o Session Duration: 36 hours.
+* Feature Priorities (High/Medium/Low):
+o Saudi Market: High.
+o DCF Analysis: Simplified version first.
+o Management Analysis: Medium.
+o Chat Interface (React migration): Medium.
+o Mobile Support: Low for MVP.
+
+E. Business & Legal Requirements
+* Fiduciary Advisor Mode:
+o Legal Counsel: Internal legal available, not full investment license yet.
+o Disclaimers: Standard “not financial advice” disclaimer required.
+o Geographic Restrictions: Saudi & US only at MVP.
+o Investment Minimums: None.
+o Risk Disclosures: Generic risk disclaimer sufficient.
+* Business Model:
+o Monetization: Free during beta, then TBD.
+o User Tiers: Single tier at MVP.
+o API Access: Not planned initially.
+o White Labeling: Future option, not MVP.
+
+F. Development & Deployment
+* Environment Setup:
+o Git: GitHub.
+o CI/CD: GitHub Actions.
+o Monitoring: AWS CloudWatch only.
+o Error Tracking: Sentry.
+* Team Access:
+o AWS: I’ll hold admin; devs get scoped permissions.
+o Repository: Myself + 2 devs.
+o Production Access: Only me.
+o Monitoring Alerts: Send to my email.
+
+G. Testing & QA
+* Testing:
+o Beta Users: Yes, small group identified.
+o Load Testing: Expect ~100 concurrent users for stress test.
+o Security Testing: Basic penetration test pre-launch.
+o Compliance Testing: Not needed for MVP.
+
+Priorities Recap
+* Week 1 (Critical): AWS setup, domain decision, API key confirmation, basic security.
+* Week 2 (Important): DB config, auth flow, feature priority, legal disclaimers.
+* Week 3+ (Planning): Business model, team access, testing strategy, long-term infra.
+Top of Form
+
+Bottom of Form
+

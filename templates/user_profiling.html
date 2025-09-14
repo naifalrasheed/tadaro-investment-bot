@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+{% block title %}Investment Profile{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Complete Your Investment Profile</h1>
+    
+    <div class="progress mb-4">
+        <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="profileProgress">0%</div>
+    </div>
+    
+    <form method="POST" id="profilingForm">
+        <!-- Time Horizon Section -->
+        <div class="profiling-section" id="section-time-horizon">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Time Horizon</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label">When do you expect to start withdrawing money from your investment account?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_1" id="th_1_1" value="1" required>
+                            <label class="form-check-label" for="th_1_1">Less than 1 year</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_1" id="th_1_2" value="2">
+                            <label class="form-check-label" for="th_1_2">1-3 years</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_1" id="th_1_3" value="3">
+                            <label class="form-check-label" for="th_1_3">3-5 years</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_1" id="th_1_4" value="4">
+                            <label class="form-check-label" for="th_1_4">5-10 years</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_1" id="th_1_5" value="5">
+                            <label class="form-check-label" for="th_1_5">More than 10 years</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Once you begin withdrawing money, how long do you expect to continue withdrawing?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_2" id="th_2_1" value="5" required>
+                            <label class="form-check-label" for="th_2_1">Less than 1 year</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_2" id="th_2_2" value="4">
+                            <label class="form-check-label" for="th_2_2">1-3 years</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_2" id="th_2_3" value="3">
+                            <label class="form-check-label" for="th_2_3">3-5 years</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_2" id="th_2_4" value="2">
+                            <label class="form-check-label" for="th_2_4">5-10 years</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="th_2" id="th_2_5" value="1">
+                            <label class="form-check-label" for="th_2_5">More than 10 years</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary float-end next-section">Next</button>
+        </div>
+        
+        <!-- Risk Tolerance Section -->
+        <div class="profiling-section" id="section-risk-tolerance" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Risk Tolerance</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label">Which statement best describes your investment attitude?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_1" id="rt_1_1" value="1" required>
+                            <label class="form-check-label" for="rt_1_1">I cannot tolerate any investment losses</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_1" id="rt_1_2" value="2">
+                            <label class="form-check-label" for="rt_1_2">I can tolerate small losses occasionally</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_1" id="rt_1_3" value="3">
+                            <label class="form-check-label" for="rt_1_3">I can accept moderate losses in pursuit of higher returns</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_1" id="rt_1_4" value="4">
+                            <label class="form-check-label" for="rt_1_4">I can accept significant volatility for maximum returns</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_1" id="rt_1_5" value="5">
+                            <label class="form-check-label" for="rt_1_5">I view volatility as an opportunity</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">If your investment dropped 20% in one month, what would you do?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_2" id="rt_2_1" value="1" required>
+                            <label class="form-check-label" for="rt_2_1">Sell everything immediately</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_2" id="rt_2_2" value="2">
+                            <label class="form-check-label" for="rt_2_2">Sell some investments</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_2" id="rt_2_3" value="3">
+                            <label class="form-check-label" for="rt_2_3">Do nothing and wait it out</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_2" id="rt_2_4" value="4">
+                            <label class="form-check-label" for="rt_2_4">Buy a little more</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rt_2" id="rt_2_5" value="5">
+                            <label class="form-check-label" for="rt_2_5">Buy a lot more</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-section">Previous</button>
+            <button type="button" class="btn btn-primary float-end next-section">Next</button>
+        </div>
+        
+        <!-- Investment Knowledge Section -->
+        <div class="profiling-section" id="section-investment-knowledge" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Investment Knowledge</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label">How would you rate your investment knowledge?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ik_1" id="ik_1_1" value="1" required>
+                            <label class="form-check-label" for="ik_1_1">None</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ik_1" id="ik_1_2" value="2">
+                            <label class="form-check-label" for="ik_1_2">Limited</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ik_1" id="ik_1_3" value="3">
+                            <label class="form-check-label" for="ik_1_3">Good</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ik_1" id="ik_1_4" value="4">
+                            <label class="form-check-label" for="ik_1_4">Extensive</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ik_1" id="ik_1_5" value="5">
+                            <label class="form-check-label" for="ik_1_5">Professional</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-section">Previous</button>
+            <button type="button" class="btn btn-primary float-end next-section">Next</button>
+        </div>
+        
+        <!-- Income Stability Section -->
+        <div class="profiling-section" id="section-income-stability" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Income Stability</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label">How stable is your current and future income?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_1" id="is_1_1" value="1" required>
+                            <label class="form-check-label" for="is_1_1">Very unstable</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_1" id="is_1_2" value="2">
+                            <label class="form-check-label" for="is_1_2">Somewhat unstable</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_1" id="is_1_3" value="3">
+                            <label class="form-check-label" for="is_1_3">Mostly stable</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_1" id="is_1_4" value="4">
+                            <label class="form-check-label" for="is_1_4">Very stable</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="is_1" id="is_1_5" value="5">
+                            <label class="form-check-label" for="is_1_5">Guaranteed stable</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-section">Previous</button>
+            <button type="button" class="btn btn-primary float-end next-section">Next</button>
+        </div>
+        
+        <!-- Loss Attitude Section -->
+        <div class="profiling-section" id="section-loss-attitude" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Loss Attitude</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label">What is the maximum loss you could tolerate in one year?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="la_1" id="la_1_1" value="1" required>
+                            <label class="form-check-label" for="la_1_1">0-5%</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="la_1" id="la_1_2" value="2">
+                            <label class="form-check-label" for="la_1_2">5-10%</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="la_1" id="la_1_3" value="3">
+                            <label class="form-check-label" for="la_1_3">10-15%</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="la_1" id="la_1_4" value="4">
+                            <label class="form-check-label" for="la_1_4">15-25%</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="la_1" id="la_1_5" value="5">
+                            <label class="form-check-label" for="la_1_5">More than 25%</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-section">Previous</button>
+            <button type="button" class="btn btn-primary float-end next-section">Next</button>
+        </div>
+        
+        <!-- Behavioral Bias Section -->
+        <div class="profiling-section" id="section-behavioral-biases" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Behavioral Tendencies</h3>
+                    <p class="text-white mb-0">Based on CFA curriculum behavioral finance concepts</p>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">These questions help us understand your behavioral tendencies in investing, allowing us to provide more personalized recommendations.</p>
+                    
+                    <!-- Loss aversion bias -->
+                    <div class="mb-4">
+                        <label class="form-label">Which of these statements best describes you?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_1" id="ba_1_1" value="1" required>
+                            <label class="form-check-label" for="ba_1_1">The pain of losing $1,000 feels much stronger than the pleasure of gaining $1,000</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_1" id="ba_1_2" value="2">
+                            <label class="form-check-label" for="ba_1_2">The pain of losing $1,000 feels somewhat stronger than the pleasure of gaining $1,000</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_1" id="ba_1_3" value="3">
+                            <label class="form-check-label" for="ba_1_3">Losing $1,000 and gaining $1,000 feel about equally intense to me</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_1" id="ba_1_4" value="4">
+                            <label class="form-check-label" for="ba_1_4">The pleasure of gaining $1,000 feels somewhat stronger than the pain of losing $1,000</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_1" id="ba_1_5" value="5">
+                            <label class="form-check-label" for="ba_1_5">The pleasure of gaining $1,000 feels much stronger than the pain of losing $1,000</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Herding bias -->
+                    <div class="mb-4">
+                        <label class="form-label">When you hear that many investors are buying a particular stock, you are:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_2" id="ba_2_1" value="1" required>
+                            <label class="form-check-label" for="ba_2_1">Very likely to buy it too, as the crowd is usually right</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_2" id="ba_2_2" value="2">
+                            <label class="form-check-label" for="ba_2_2">Somewhat likely to buy it too</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_2" id="ba_2_3" value="3">
+                            <label class="form-check-label" for="ba_2_3">Neutral - I'll do my own research regardless</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_2" id="ba_2_4" value="4">
+                            <label class="form-check-label" for="ba_2_4">Somewhat hesitant to buy it</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_2" id="ba_2_5" value="5">
+                            <label class="form-check-label" for="ba_2_5">Very hesitant to buy it, as popular investments are often overvalued</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Recency bias -->
+                    <div class="mb-4">
+                        <label class="form-label">When making investment decisions, how much weight do you give to recent market events?</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_3" id="ba_3_1" value="1" required>
+                            <label class="form-check-label" for="ba_3_1">Very heavy weight - recent events are most predictive of future performance</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_3" id="ba_3_2" value="2">
+                            <label class="form-check-label" for="ba_3_2">Significant weight</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_3" id="ba_3_3" value="3">
+                            <label class="form-check-label" for="ba_3_3">Moderate weight - I balance recent and long-term data</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_3" id="ba_3_4" value="4">
+                            <label class="form-check-label" for="ba_3_4">Limited weight</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ba_3" id="ba_3_5" value="5">
+                            <label class="form-check-label" for="ba_3_5">Very little weight - I focus on long-term trends and fundamentals</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-section">Previous</button>
+            <button type="button" class="btn btn-primary float-end next-section">Next</button>
+        </div>
+        
+        <!-- Sector Preferences Section -->
+        <div class="profiling-section" id="section-sector-preferences" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Sector Preferences</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label">Select your preferred sectors (select all that apply):</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_tech" value="Technology">
+                            <label class="form-check-label" for="sector_tech">Technology</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_healthcare" value="Healthcare">
+                            <label class="form-check-label" for="sector_healthcare">Healthcare</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_financial" value="Financial">
+                            <label class="form-check-label" for="sector_financial">Financial</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_consumer" value="Consumer">
+                            <label class="form-check-label" for="sector_consumer">Consumer</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_industrial" value="Industrial">
+                            <label class="form-check-label" for="sector_industrial">Industrial</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_energy" value="Energy">
+                            <label class="form-check-label" for="sector_energy">Energy</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_materials" value="Materials">
+                            <label class="form-check-label" for="sector_materials">Materials</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_utilities" value="Utilities">
+                            <label class="form-check-label" for="sector_utilities">Utilities</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="preferred_sectors" id="sector_realestate" value="Real Estate">
+                            <label class="form-check-label" for="sector_realestate">Real Estate</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Select sectors you wish to exclude (select all that apply):</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_tech" value="Technology">
+                            <label class="form-check-label" for="exclude_tech">Technology</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_healthcare" value="Healthcare">
+                            <label class="form-check-label" for="exclude_healthcare">Healthcare</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_financial" value="Financial">
+                            <label class="form-check-label" for="exclude_financial">Financial</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_consumer" value="Consumer">
+                            <label class="form-check-label" for="exclude_consumer">Consumer</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_industrial" value="Industrial">
+                            <label class="form-check-label" for="exclude_industrial">Industrial</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_energy" value="Energy">
+                            <label class="form-check-label" for="exclude_energy">Energy</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_materials" value="Materials">
+                            <label class="form-check-label" for="exclude_materials">Materials</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_utilities" value="Utilities">
+                            <label class="form-check-label" for="exclude_utilities">Utilities</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="excluded_sectors" id="exclude_realestate" value="Real Estate">
+                            <label class="form-check-label" for="exclude_realestate">Real Estate</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-section">Previous</button>
+            <button type="submit" class="btn btn-success float-end">Complete Profile</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = document.querySelectorAll('.profiling-section');
+    const progressBar = document.getElementById('profileProgress');
+    let currentSection = 0;
+    
+    // Update progress bar
+    function updateProgress() {
+        const progress = Math.round((currentSection / (sections.length - 1)) * 100);
+        progressBar.style.width = progress + '%';
+        progressBar.innerText = progress + '%';
+        progressBar.setAttribute('aria-valuenow', progress);
+    }
+    
+    // Handle next button clicks
+    document.querySelectorAll('.next-section').forEach(button => {
+        button.addEventListener('click', function() {
+            // Validate current section
+            const currentSectionElement = sections[currentSection];
+            const inputs = currentSectionElement.querySelectorAll('input[required]');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (input.type === 'radio') {
+                    const name = input.name;
+                    const checked = currentSectionElement.querySelector(`input[name="${name}"]:checked`);
+                    if (!checked) {
+                        isValid = false;
+                    }
+                } else if (!input.value.trim()) {
+                    isValid = false;
+                }
+            });
+            
+            if (!isValid) {
+                alert('Please answer all required questions before proceeding.');
+                return;
+            }
+            
+            // Hide current section
+            sections[currentSection].style.display = 'none';
+            
+            // Show next section
+            currentSection++;
+            sections[currentSection].style.display = 'block';
+            
+            // Update progress
+            updateProgress();
+        });
+    });
+    
+    // Handle previous button clicks
+    document.querySelectorAll('.prev-section').forEach(button => {
+        button.addEventListener('click', function() {
+            // Hide current section
+            sections[currentSection].style.display = 'none';
+            
+            // Show previous section
+            currentSection--;
+            sections[currentSection].style.display = 'block';
+            
+            // Update progress
+            updateProgress();
+        });
+    });
+    
+    // Prevent form submission if the user hasn't completed all sections
+    document.getElementById('profilingForm').addEventListener('submit', function(e) {
+        if (currentSection !== sections.length - 1) {
+            e.preventDefault();
+            alert('Please complete all sections before submitting.');
+        }
+    });
+});
+</script>
+{% endblock %}

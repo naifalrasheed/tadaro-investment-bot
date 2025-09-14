@@ -1,0 +1,911 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat Interface{% endblock %}
+
+{% block head_scripts %}
+<!-- Ensure Bootstrap is loaded first and properly initialized -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Ensure Bootstrap is loaded and properly initialized
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to initialize all Bootstrap components
+    function initBootstrapComponents() {
+        console.log('Initializing Bootstrap components...');
+        
+        // Initialize all dropdowns
+        try {
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+            dropdownElementList.forEach(function(dropdownToggleEl) {
+                new bootstrap.Dropdown(dropdownToggleEl);
+            });
+            console.log('Dropdowns initialized: ' + dropdownElementList.length);
+        } catch (e) {
+            console.error('Error initializing dropdowns:', e);
+        }
+        
+        // Initialize all collapses (for navbar)
+        try {
+            var collapseElementList = [].slice.call(document.querySelectorAll('.navbar-collapse'));
+            collapseElementList.forEach(function(collapseEl) {
+                new bootstrap.Collapse(collapseEl, {toggle: false});
+            });
+            console.log('Collapses initialized: ' + collapseElementList.length);
+        } catch (e) {
+            console.error('Error initializing collapses:', e);
+        }
+        
+        // Initialize all tooltips
+        try {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        } catch (e) {
+            console.error('Error initializing tooltips:', e);
+        }
+    }
+    
+    // Check if Bootstrap is available
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded! Trying to load it again...');
+        // Try to load it again
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js';
+        document.head.appendChild(script);
+        
+        script.onload = function() {
+            console.log('Bootstrap loaded successfully');
+            // Initialize components
+            if (typeof bootstrap !== 'undefined') {
+                initBootstrapComponents();
+            } else {
+                console.error('Bootstrap still not available after loading script');
+            }
+        };
+    } else {
+        // Bootstrap is already loaded, initialize components
+        initBootstrapComponents();
+        
+        // Add a delayed initialization as well to catch any late-loaded elements
+        setTimeout(initBootstrapComponents, 500);
+    }
+});
+</script>
+{% endblock %}
+
+{# Force navbar to be visible on chat page #}
+{% block bodyclass %}chat-page{% endblock %}
+
+{% block styles %}
+<style>
+    /* Simple, clean chat styling */
+    .message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 75%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .user-message {
+        margin-left: auto;
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 18px 18px 0 18px;
+        text-align: right;
+    }
+    
+    .bot-message {
+        margin-right: auto;
+        background-color: #f8f9fa;
+        color: #212529;
+        border: 1px solid #dee2e6;
+        border-radius: 18px 18px 18px 0;
+    }
+    
+    /* Make pre blocks look nicer */
+    .bot-message pre {
+        background-color: #f1f3f5;
+        padding: 10px;
+        border-radius: 6px;
+        max-width: 100%;
+        overflow-x: auto;
+        margin: 10px 0;
+        border: 1px solid #dee2e6;
+    }
+    
+    /* Style for code elements */
+    code {
+        background-color: #f1f3f5;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 90%;
+        color: #d63384;
+        white-space: nowrap;
+    }
+    
+    .bot-message code {
+        white-space: pre-wrap;
+    }
+    
+    /* Quick command buttons */
+    .command-chip {
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        text-align: left;
+    }
+    
+    /* Typing indicator */
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .typing-indicator span {
+        height: 8px;
+        width: 8px;
+        margin: 0 2px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        display: inline-block;
+        opacity: 0.4;
+        animation: pulse 1s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+    }
+    
+    /* Additional styles for menu items */
+    .menu-item {
+        display: block;
+        padding: 12px 15px;
+        margin: 8px 0;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: #212529;
+    }
+    
+    .menu-item:hover {
+        background-color: #e9ecef;
+        border-color: #ced4da;
+    }
+    
+    /* Chart container styling */
+    .visualization-container {
+        margin: 20px 0;
+        height: 400px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        background-color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Investment Chat Assistant</h2>
+                <div class="d-flex">
+                    <a href="{{ url_for('analyze') }}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="fas fa-chart-line"></i> Analyze
+                    </a>
+                    <a href="{{ url_for('portfolio') }}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="fas fa-briefcase"></i> Portfolios
+                    </a>
+                    <a href="{{ url_for('recommendations') }}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="fas fa-star"></i> Recommendations
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="moreOptions" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreOptions">
+                            <li><a class="dropdown-item" href="{{ url_for('sentiment.config') }}">Sentiment Config</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('naif_sector_analysis') }}">Sector Analysis</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('naif_model_screen') }}">Technical Analysis</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar - Fixed width for better formatting -->
+        <div class="col-md-3 col-lg-3" style="max-width: 280px;">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fs-6">Commands</h5>
+                </div>
+                <div class="card-body p-3">
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-muted small text-uppercase mb-2">Stock Analysis</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-1"><code class="small">analyze AAPL</code></li>
+                            <li class="mb-1"><code class="small">compare MSFT and GOOGL</code></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-muted small text-uppercase mb-2">Portfolio</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-1"><code class="small">portfolio summary</code></li>
+                            <li class="mb-1"><code class="small">add X shares of AAPL</code></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-muted small text-uppercase mb-2">Models</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-1"><code class="small">sector analysis</code></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid mt-3">
+                        <button id="clearChat" class="btn btn-sm btn-outline-danger">Clear Chat</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fs-6">Quick Commands</h5>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-secondary text-start command-chip py-1 px-2" data-command="analyze AAPL">
+                            <i class="fas fa-chart-line me-1"></i> Analyze AAPL
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary text-start command-chip py-1 px-2" data-command="analyze MSFT">
+                            <i class="fas fa-chart-line me-1"></i> Analyze MSFT
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary text-start command-chip py-1 px-2" data-command="sector analysis">
+                            <i class="fas fa-building me-1"></i> Sector Analysis
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary text-start command-chip py-1 px-2" data-command="portfolio summary">
+                            <i class="fas fa-briefcase me-1"></i> Portfolio Summary
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary text-start command-chip py-1 px-2" data-command="help">
+                            <i class="fas fa-question-circle me-1"></i> Help
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat area - Adjust width to complement sidebar -->
+        <div class="col" style="max-width: calc(100% - 280px); margin-left: auto;">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-6">Chat Assistant</h5>
+                    <small class="text-muted">Ask questions about stocks, portfolios, or investment strategies</small>
+                </div>
+                <div class="card-body p-0">
+                    <div id="chatMessages" class="chat-messages p-3" style="height: 550px; overflow-y: auto; background-color: #f8f9fa;"></div>
+                </div>
+                <div class="card-footer bg-light p-3">
+                    <div class="input-group">
+                        <input type="text" id="chatInput" class="form-control" placeholder="Type your question or command...">
+                        <button id="sendButton" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i> Send
+                        </button>
+                    </div>
+                    <div class="mt-2 small text-muted">
+                        Try: "analyze MSFT" or "What stocks should I invest in?"
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Fix navigation button and ensure navbar is properly initialized
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to forcefully fix all navbar elements by adding inline styles
+    function forceFixNavbar() {
+        console.log("Forcing navbar visibility with inline styles...");
+        
+        // Apply strong inline styles to navbar elements
+        const navbarElements = [
+            '.navbar', 
+            '.navbar-collapse', 
+            '.navbar-nav', 
+            '.nav-item', 
+            '.nav-link', 
+            '.dropdown-menu', 
+            '.dropdown-item',
+            '.navbar-brand'
+        ];
+        
+        navbarElements.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => {
+                el.style.cssText += 'display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; z-index: 1030 !important;';
+            });
+        });
+        
+        // Special handling for flex containers
+        document.querySelectorAll('.navbar .collapse, .navbar-collapse').forEach(el => {
+            el.style.cssText += 'display: flex !important; height: auto !important; overflow: visible !important;';
+        });
+        
+        document.querySelectorAll('.navbar .container').forEach(el => {
+            el.style.cssText += 'display: flex !important; flex-wrap: wrap !important; align-items: center !important; justify-content: space-between !important; width: 100% !important;';
+        });
+        
+        // Make sure dropdown triggers are working
+        document.querySelectorAll('.dropdown-toggle').forEach(el => {
+            el.style.cssText += 'cursor: pointer !important;';
+        });
+        
+        // Reinitialize all Bootstrap components
+        if (typeof bootstrap !== 'undefined') {
+            // Initialize dropdowns
+            document.querySelectorAll('.dropdown-toggle').forEach(el => {
+                try {
+                    new bootstrap.Dropdown(el);
+                } catch (e) {
+                    console.warn("Error initializing dropdown:", e);
+                }
+            });
+            
+            // Initialize collapses
+            document.querySelectorAll('.navbar-collapse').forEach(el => {
+                try {
+                    new bootstrap.Collapse(el, {toggle: false});
+                } catch (e) {
+                    console.warn("Error initializing collapse:", e);
+                }
+            });
+            
+            console.log("Bootstrap components reinitialized");
+        }
+    }
+    
+    // Fix navigation button click handler
+    var fixNavBtn = document.getElementById('fixNavigationBtn');
+    if (fixNavBtn) {
+        fixNavBtn.addEventListener('click', function() {
+            // Apply the fix
+            forceFixNavbar();
+            
+            // Add a visual confirmation
+            this.innerHTML = '<i class="fas fa-check"></i> Navigation Fixed';
+            this.classList.remove('btn-outline-secondary');
+            this.classList.add('btn-success');
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-sync-alt"></i> Fix Navigation';
+                this.classList.remove('btn-success');
+                this.classList.add('btn-outline-secondary');
+            }, 3000);
+            
+            // If user wants, offer to reload
+            setTimeout(() => {
+                if (confirm("Navigation has been fixed. Would you like to reload the page for a complete refresh?")) {
+                    location.reload();
+                }
+            }, 500);
+        });
+    }
+    
+    // Run a lighter version of the fix on page load automatically
+    setTimeout(function() {
+        // Check if navbar is visible - if not, fix it
+        const navbar = document.querySelector('.navbar-collapse');
+        if (navbar && (window.getComputedStyle(navbar).display === 'none' || window.getComputedStyle(navbar).visibility === 'hidden')) {
+            console.log("Navbar not visible, applying automatic fix");
+            forceFixNavbar();
+        }
+    }, 1000);
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM elements
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendButton = document.getElementById('sendButton');
+    const clearChatButton = document.getElementById('clearChat');
+    const commandChips = document.querySelectorAll('.command-chip');
+    
+    // Chart objects to keep track of visualizations
+    const charts = {};
+    
+    // Load chat history
+    loadChatHistory();
+    
+    // Event listeners
+    sendButton.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+    
+    clearChatButton.addEventListener('click', clearChat);
+    
+    commandChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            const command = this.getAttribute('data-command');
+            chatInput.value = command;
+            sendMessage();
+        });
+    });
+    
+    // Functions
+    function loadChatHistory() {
+        fetch('/api/chat/history', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.history && data.history.length > 0) {
+                data.history.forEach(message => {
+                    if (message.role === 'user') {
+                        addUserMessage(message.content);
+                    } else {
+                        addBotMessage(message.content);
+                    }
+                });
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading chat history:', error);
+        });
+    }
+    
+    function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+        
+        // Add user message to UI
+        addUserMessage(message);
+        
+        // Clear input
+        chatInput.value = '';
+        
+        // Show typing indicator
+        addTypingIndicator();
+        
+        // Send to backend
+        fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                include_visualizations: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remove typing indicator
+            removeTypingIndicator();
+            
+            // Add bot response
+            if (data.text) {
+                addBotMessage(data.text, data.visualizations);
+            } else if (data.error) {
+                addBotMessage(`Error: ${data.error}`);
+            }
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            removeTypingIndicator();
+            addBotMessage('Sorry, there was an error processing your request.');
+        });
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function addUserMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'user-message');
+        messageDiv.textContent = message;
+        chatMessages.appendChild(messageDiv);
+    }
+    
+    function addBotMessage(message, visualizations = null) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'bot-message');
+        
+        // Configure marked to allow HTML
+        marked.setOptions({
+            sanitize: false,  // Allow HTML in the markdown
+            gfm: true,        // GitHub-flavored markdown
+            breaks: true      // Convert line breaks to <br>
+        });
+        
+        // Render markdown
+        messageDiv.innerHTML = marked.parse(message);
+        
+        // Enable onclick events for menu items
+        setTimeout(() => {
+            const menuItems = messageDiv.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                if (item.getAttribute('onclick')) {
+                    const onclickAttr = item.getAttribute('onclick');
+                    item.onclick = function() {
+                        eval(onclickAttr);
+                    };
+                }
+            });
+        }, 100);
+        
+        chatMessages.appendChild(messageDiv);
+        
+        // Add visualizations if provided
+        if (visualizations) {
+            addVisualizations(messageDiv, visualizations);
+        }
+    }
+    
+    function addTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typingIndicator';
+        typingDiv.classList.add('typing-indicator', 'message', 'bot-message');
+        typingDiv.innerHTML = '<span></span><span></span><span></span>';
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function removeTypingIndicator() {
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+    
+    function addVisualizations(messageDiv, visualizations) {
+        for (const [key, viz] of Object.entries(visualizations)) {
+            const vizContainer = document.createElement('div');
+            vizContainer.classList.add('visualization-container');
+            vizContainer.id = `viz-${key}-${Date.now()}`;
+            messageDiv.appendChild(vizContainer);
+            
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${key}-${Date.now()}`;
+            vizContainer.appendChild(canvas);
+            
+            createChart(canvas.id, viz);
+        }
+    }
+    
+    function createChart(canvasId, vizData) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        switch (vizData.type) {
+            case 'bar':
+                createBarChart(ctx, vizData);
+                break;
+            case 'line':
+                createLineChart(ctx, vizData);
+                break;
+            case 'pie':
+                createPieChart(ctx, vizData);
+                break;
+            case 'gauge':
+                createGaugeChart(ctx, vizData);
+                break;
+            case 'scatter':
+                createScatterChart(ctx, vizData);
+                break;
+            default:
+                console.warn(`Unsupported chart type: ${vizData.type}`);
+        }
+    }
+    
+    function createBarChart(ctx, vizData) {
+        const data = vizData.data;
+        
+        charts[ctx.canvas.id] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: vizData.title,
+                    data: data.values || [],
+                    backgroundColor: data.colors || 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: vizData.title
+                    }
+                }
+            }
+        });
+    }
+    
+    function createLineChart(ctx, vizData) {
+        const data = vizData.data;
+        
+        // For a price chart, we need to prepare historical data
+        let labels = [];
+        let values = [];
+        
+        if (data.historical_prices) {
+            data.historical_prices.forEach(point => {
+                labels.push(point.date);
+                values.push(point.close);
+            });
+        }
+        
+        charts[ctx.canvas.id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: data.symbol || vizData.title,
+                    data: values,
+                    fill: false,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: vizData.title
+                    }
+                }
+            }
+        });
+    }
+    
+    function createPieChart(ctx, vizData) {
+        const data = vizData.data;
+        
+        const backgroundColors = [
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(54, 162, 235, 0.5)',
+            'rgba(255, 206, 86, 0.5)',
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(153, 102, 255, 0.5)',
+            'rgba(255, 159, 64, 0.5)',
+            'rgba(199, 199, 199, 0.5)',
+            'rgba(83, 102, 255, 0.5)',
+            'rgba(40, 159, 64, 0.5)',
+            'rgba(210, 199, 199, 0.5)'
+        ];
+        
+        charts[ctx.canvas.id] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    data: data.values || [],
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color.replace('0.5', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: vizData.title
+                    }
+                }
+            }
+        });
+    }
+    
+    function createGaugeChart(ctx, vizData) {
+        const data = vizData.data;
+        
+        // Create a gauge with a needle pointing to the value
+        const value = data.value || 0;
+        const min = data.min || 0;
+        const max = data.max || 100;
+        const thresholds = data.thresholds || [33, 66]; // Default thresholds
+        
+        // Define colors based on thresholds
+        const getColor = (value) => {
+            if (value < thresholds[0]) return 'rgba(255, 99, 132, 0.8)'; // Red
+            if (value < thresholds[1]) return 'rgba(255, 205, 86, 0.8)'; // Yellow
+            return 'rgba(75, 192, 192, 0.8)'; // Green
+        };
+        
+        charts[ctx.canvas.id] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Poor', 'Average', 'Good'],
+                datasets: [{
+                    data: [thresholds[0], thresholds[1] - thresholds[0], max - thresholds[1]],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                circumference: 180,
+                rotation: 270,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: vizData.title
+                    },
+                    tooltip: {
+                        enabled: false
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Add the needle as a separate canvas layer
+        const addNeedle = () => {
+            const chart = charts[ctx.canvas.id];
+            const canvas = chart.canvas;
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height;
+            const length = Math.min(canvas.width, canvas.height) * 0.8;
+            
+            // Calculate needle angle
+            const range = max - min;
+            const percentage = (value - min) / range;
+            const angle = percentage * Math.PI;
+            
+            // Draw the needle
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(length, 0);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.stroke();
+            
+            // Draw needle point
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fill();
+            
+            // Draw value text
+            ctx.rotate(-angle);
+            ctx.font = '20px Arial';
+            ctx.fillStyle = getColor(value);
+            ctx.textAlign = 'center';
+            ctx.fillText(`${value.toFixed(1)}`, 0, -20);
+            
+            ctx.restore();
+        };
+        
+        // Call addNeedle after chart is rendered
+        setTimeout(addNeedle, 100);
+    }
+    
+    function createScatterChart(ctx, vizData) {
+        const data = vizData.data;
+        
+        charts[ctx.canvas.id] = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Optimized Portfolio',
+                    data: [{ x: data.x[0], y: data.y[0] }],
+                    backgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointRadius: 8
+                }, {
+                    label: 'Current Portfolio',
+                    data: [{ x: data.current.x, y: data.current.y }],
+                    backgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Risk (%)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Return (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: vizData.title
+                    }
+                }
+            }
+        });
+    }
+    
+    function clearChat() {
+        if (confirm('Are you sure you want to clear the chat history?')) {
+            fetch('/api/chat/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear the chat UI
+                    chatMessages.innerHTML = '';
+                    // Reload initial message
+                    loadChatHistory();
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing chat:', error);
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Bot - Comprehensive Testing Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #17a2b8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            border-left: 4px solid var(--secondary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .section-header {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            margin: -1px -1px 20px -1px;
+            border-radius: 9px 9px 0 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-button {
+            margin: 5px;
+            min-width: 200px;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-analyze { background: var(--info-color); color: white; }
+        .btn-portfolio { background: var(--success-color); color: white; }
+        .btn-naif { background: var(--warning-color); color: white; }
+        .btn-phase3 { background: var(--primary-color); color: white; }
+        .btn-phase4 { background: var(--secondary-color); color: white; }
+        .btn-chat { background: var(--danger-color); color: white; }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online { background-color: var(--success-color); }
+        .status-offline { background-color: var(--danger-color); }
+        .status-warning { background-color: var(--warning-color); }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .quick-test-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .test-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .test-success {
+            background-color: #d4edda;
+            border-color: var(--success-color);
+            color: #155724;
+        }
+
+        .test-error {
+            background-color: #f8d7da;
+            border-color: var(--danger-color);
+            color: #721c24;
+        }
+
+        .test-info {
+            background-color: #d1ecf1;
+            border-color: var(--info-color);
+            color: #0c5460;
+        }
+
+        .symbol-input {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 5px;
+            min-width: 150px;
+        }
+
+        .symbol-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .phase-badge {
+            background: var(--secondary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .new-feature {
+            background: var(--success-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-chart-line text-primary"></i>
+                Investment Bot Testing Dashboard
+            </h1>
+            <p class="lead">Comprehensive testing interface for all features including new Phase 3 & 4 capabilities</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>System Status:</strong> All features operational with TwelveData API integration
+            </div>
+        </div>
+
+        <!-- Quick Test Panel -->
+        <div class="quick-test-panel">
+            <h3><i class="fas fa-bolt"></i> Quick Test Panel</h3>
+            <p>Test any stock symbol across all analysis types</p>
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <input type="text" id="quickSymbol" class="symbol-input" placeholder="Enter symbol (e.g., AAPL, 2222)" value="AAPL">
+                </div>
+                <div class="col-md-9">
+                    <button onclick="runQuickAnalysis()" class="test-button btn-analyze">
+                        <i class="fas fa-rocket"></i> Run Complete Analysis
+                    </button>
+                    <button onclick="runSaudiQuickTest()" class="test-button btn-phase3">
+                        <i class="fas fa-flag"></i> Test Saudi Market (2222)
+                    </button>
+                </div>
+            </div>
+            <div id="quickTestResults"></div>
+        </div>
+
+        <!-- Feature Testing Sections -->
+        <div class="feature-grid">
+            
+            <!-- Core Analysis Features -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Core Stock Analysis
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Active</span>
+                </div>
+                <div class="p-3">
+                    <p>Original investment analysis with technical and fundamental metrics</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testFeature('/analyze')" class="test-button btn-analyze">
+                            <i class="fas fa-search"></i> Stock Analysis
+                        </button>
+                        <button onclick="testAnalysisHistory()" class="test-button btn-analyze">
+                            <i class="fas fa-history"></i> Analysis History
+                        </button>
+                        <button onclick="testPersonalizedAnalysis()" class="test-button btn-analyze">
+                            <i class="fas fa-user-chart"></i> Personalized Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Management -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-briefcase"></i>
+                    Portfolio Management
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Active</span>
+                </div>
+                <div class="p-3">
+                    <p>Portfolio creation, optimization, and performance tracking</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testFeature('/portfolio')" class="test-button btn-portfolio">
+                            <i class="fas fa-wallet"></i> View Portfolio
+                        </button>
+                        <button onclick="testFeature('/portfolio/import')" class="test-button btn-portfolio">
+                            <i class="fas fa-upload"></i> Import Portfolio
+                        </button>
+                        <button onclick="testPortfolioOptimize()" class="test-button btn-portfolio">
+                            <i class="fas fa-cogs"></i> Portfolio Optimization
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Naif Al-Rasheed Model -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-crown"></i>
+                    Naif Al-Rasheed Model
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Active</span>
+                </div>
+                <div class="p-3">
+                    <p>Advanced investment philosophy with US and Saudi market support</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testFeature('/naif-model')" class="test-button btn-naif">
+                            <i class="fas fa-brain"></i> Naif Model Dashboard
+                        </button>
+                        <button onclick="testFeature('/naif-model/sector-analysis')" class="test-button btn-naif">
+                            <i class="fas fa-industry"></i> Sector Analysis
+                        </button>
+                        <button onclick="testNaifTechnical()" class="test-button btn-naif">
+                            <i class="fas fa-chart-line"></i> Technical Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profiling & Preferences -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-user-cog"></i>
+                    User Profiling & ML
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Active</span>
+                </div>
+                <div class="p-3">
+                    <p>CFA-integrated behavioral finance and adaptive learning</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testFeature('/user_profiling')" class="test-button btn-analyze">
+                            <i class="fas fa-user-circle"></i> CFA Profiling
+                        </button>
+                        <button onclick="testFeature('/preferences')" class="test-button btn-analyze">
+                            <i class="fas fa-sliders-h"></i> Preferences
+                        </button>
+                        <button onclick="testFeature('/recommendations')" class="test-button btn-analyze">
+                            <i class="fas fa-lightbulb"></i> ML Recommendations
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 3: Management & Governance -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-users-cog"></i>
+                    Phase 3: Management Analysis
+                    <span class="new-feature">NEW</span>
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Ready</span>
+                </div>
+                <div class="p-3">
+                    <p>Advanced management quality and governance analysis</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testPhase3Management()" class="test-button btn-phase3">
+                            <i class="fas fa-user-tie"></i> Management Quality
+                        </button>
+                        <button onclick="testPhase3ShareholderValue()" class="test-button btn-phase3">
+                            <i class="fas fa-chart-pie"></i> Shareholder Value
+                        </button>
+                        <button onclick="testPhase3Macro()" class="test-button btn-phase3">
+                            <i class="fas fa-globe"></i> Macro Integration
+                        </button>
+                        <button onclick="testPhase3Comprehensive()" class="test-button btn-phase3">
+                            <i class="fas fa-analytics"></i> Complete Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phase 4: AI Fiduciary Advisor -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-robot"></i>
+                    Phase 4: AI Fiduciary Advisor
+                    <span class="new-feature">NEW</span>
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Ready</span>
+                </div>
+                <div class="p-3">
+                    <p>Professional-grade fiduciary investment advisory</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testPhase4RiskAssessment()" class="test-button btn-phase4">
+                            <i class="fas fa-shield-alt"></i> Risk Assessment
+                        </button>
+                        <button onclick="testPhase4PortfolioConstruction()" class="test-button btn-phase4">
+                            <i class="fas fa-building"></i> Portfolio Construction
+                        </button>
+                        <button onclick="testPhase4FiduciaryAdvice()" class="test-button btn-phase4">
+                            <i class="fas fa-handshake"></i> Fiduciary Advice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-comments"></i>
+                    AI Chat Assistant
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Active</span>
+                </div>
+                <div class="p-3">
+                    <p>Natural language investment analysis and recommendations</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testFeature('/chat')" class="test-button btn-chat">
+                            <i class="fas fa-robot"></i> Open Chat Interface
+                        </button>
+                        <button onclick="testChatAPI()" class="test-button btn-chat">
+                            <i class="fas fa-code"></i> Test Chat API
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Configuration -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-cogs"></i>
+                    System Configuration
+                    <span class="ms-auto"><span class="status-indicator status-online"></span>Active</span>
+                </div>
+                <div class="p-3">
+                    <p>System settings, sentiment configuration, and data management</p>
+                    <div class="d-flex flex-wrap">
+                        <button onclick="testFeature('/sentiment-config')" class="test-button btn-analyze">
+                            <i class="fas fa-heart-pulse"></i> Sentiment Config
+                        </button>
+                        <button onclick="testFeature('/clear-cache')" class="test-button btn-analyze">
+                            <i class="fas fa-trash"></i> Clear Cache
+                        </button>
+                        <button onclick="testSystemStatus()" class="test-button btn-analyze">
+                            <i class="fas fa-server"></i> System Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Test Results Section -->
+        <div class="mt-4">
+            <h3><i class="fas fa-clipboard-list"></i> Test Results</h3>
+            <div id="testResults" class="border rounded p-3" style="min-height: 200px; background-color: #f8f9fa;">
+                <p class="text-muted text-center">Test results will appear here...</p>
+            </div>
+        </div>
+
+        <!-- API Testing Section -->
+        <div class="section-card mt-4">
+            <div class="section-header">
+                <i class="fas fa-plug"></i>
+                API Endpoints Testing
+                <span class="new-feature">Phase 3 & 4</span>
+            </div>
+            <div class="p-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Phase 3 API Endpoints</h5>
+                        <button onclick="testAPI('GET', '/api/management/quality/2222')" class="test-button btn-phase3 btn-sm">
+                            GET /api/management/quality/{symbol}
+                        </button>
+                        <button onclick="testAPI('GET', '/api/shareholder-value/2222')" class="test-button btn-phase3 btn-sm">
+                            GET /api/shareholder-value/{symbol}
+                        </button>
+                        <button onclick="testAPI('GET', '/api/macro-integration/2222?sector=energy')" class="test-button btn-phase3 btn-sm">
+                            GET /api/macro-integration/{symbol}
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Phase 4 API Endpoints</h5>
+                        <button onclick="testPhase4APIs()" class="test-button btn-phase4 btn-sm">
+                            POST /api/advisory/risk-assessment
+                        </button>
+                        <button onclick="testPhase4APIs()" class="test-button btn-phase4 btn-sm">
+                            POST /api/advisory/portfolio-construction
+                        </button>
+                        <button onclick="testPhase4APIs()" class="test-button btn-phase4 btn-sm">
+                            POST /api/advisory/fiduciary-advice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global test results container
+        let testResults = document.getElementById('testResults');
+        let quickTestResults = document.getElementById('quickTestResults');
+
+        function addTestResult(title, status, message, details = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = status === 'success' ? 'test-success' : 
+                               status === 'error' ? 'test-error' : 'test-info';
+            const icon = status === 'success' ? 'fas fa-check-circle' : 
+                        status === 'error' ? 'fas fa-times-circle' : 'fas fa-info-circle';
+            
+            const resultHTML = `
+                <div class="test-result ${statusClass}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6><i class="${icon}"></i> ${title}</h6>
+                            <p class="mb-1">${message}</p>
+                            ${details ? `<small class="text-muted">${details}</small>` : ''}
+                        </div>
+                        <small class="text-muted">${timestamp}</small>
+                    </div>
+                </div>
+            `;
+            
+            testResults.innerHTML = resultHTML + testResults.innerHTML;
+        }
+
+        // Test basic features by opening in new window/tab
+        function testFeature(url) {
+            addTestResult(
+                `Testing ${url}`,
+                'info',
+                `Opening ${url} in new tab...`
+            );
+            window.open(url, '_blank');
+        }
+
+        // Run quick analysis
+        function runQuickAnalysis() {
+            const symbol = document.getElementById('quickSymbol').value || 'AAPL';
+            addTestResult(
+                'Quick Analysis Started',
+                'info',
+                `Running comprehensive analysis for ${symbol}...`
+            );
+            
+            // Open multiple analysis windows
+            setTimeout(() => testFeature(`/analyze`), 100);
+            setTimeout(() => testFeature(`/personalized/${symbol}`), 500);
+            setTimeout(() => testPersonalizedAnalysis(), 1000);
+        }
+
+        // Test Saudi market specifically
+        function runSaudiQuickTest() {
+            addTestResult(
+                'Saudi Market Test',
+                'info',
+                'Testing Saudi market features with Aramco (2222)...'
+            );
+            
+            // Test Phase 3 & 4 with Saudi stock
+            setTimeout(() => testPhase3Management(), 100);
+            setTimeout(() => testPhase3ShareholderValue(), 500);
+            setTimeout(() => testPhase4RiskAssessment(), 1000);
+        }
+
+        // Phase 3 Testing Functions
+        function testPhase3Management() {
+            addTestResult(
+                'Phase 3: Management Quality Analysis',
+                'info',
+                'Testing management quality assessment for Saudi Aramco...'
+            );
+            testAPI('GET', '/api/management/quality/2222?company_name=Saudi Aramco');
+        }
+
+        function testPhase3ShareholderValue() {
+            addTestResult(
+                'Phase 3: Shareholder Value Analysis',
+                'info',
+                'Testing shareholder value tracking...'
+            );
+            testAPI('GET', '/api/shareholder-value/2222?years=5');
+        }
+
+        function testPhase3Macro() {
+            addTestResult(
+                'Phase 3: Macro Integration',
+                'info',
+                'Testing macroeconomic integration...'
+            );
+            testAPI('GET', '/api/macro-integration/2222?sector=energy&base_valuation=100');
+        }
+
+        function testPhase3Comprehensive() {
+            addTestResult(
+                'Phase 3: Comprehensive Analysis',
+                'info',
+                'Running complete Phase 3 analysis pipeline...'
+            );
+            testAPI('GET', '/api/comprehensive-analysis/2222?sector=energy&company_name=Saudi Aramco&base_valuation=100');
+        }
+
+        // Phase 4 Testing Functions
+        function testPhase4RiskAssessment() {
+            const sampleClientData = {
+                age: 35,
+                annual_income: 200000,
+                net_worth: 800000,
+                dependents: 2,
+                risk_questionnaire: {
+                    volatility_comfort: 4,
+                    loss_tolerance: 3,
+                    experience_comfort: 4,
+                    time_horizon_comfort: 5
+                },
+                investment_goals: [{
+                    name: "Retirement",
+                    target_amount: 3000000,
+                    time_horizon: 20,
+                    priority: "high"
+                }]
+            };
+
+            addTestResult(
+                'Phase 4: Risk Assessment',
+                'info',
+                'Testing AI fiduciary risk profiling...'
+            );
+            testAPI('POST', '/api/advisory/risk-assessment', sampleClientData);
+        }
+
+        function testPhase4PortfolioConstruction() {
+            const sampleClientData = {
+                age: 35,
+                annual_income: 200000,
+                net_worth: 800000,
+                risk_questionnaire: { volatility_comfort: 4, loss_tolerance: 3 },
+                investment_goals: [{ name: "Retirement", target_amount: 3000000, time_horizon: 20 }]
+            };
+
+            addTestResult(
+                'Phase 4: Portfolio Construction',
+                'info',
+                'Testing AI portfolio optimization...'
+            );
+            testAPI('POST', '/api/advisory/portfolio-construction', sampleClientData);
+        }
+
+        function testPhase4FiduciaryAdvice() {
+            const sampleClientData = {
+                age: 35,
+                annual_income: 200000,
+                net_worth: 800000,
+                dependents: 2,
+                risk_questionnaire: {
+                    volatility_comfort: 4,
+                    loss_tolerance: 3,
+                    experience_comfort: 4,
+                    time_horizon_comfort: 5
+                },
+                investment_goals: [{
+                    name: "Retirement",
+                    target_amount: 3000000,
+                    time_horizon: 20,
+                    priority: "high"
+                }]
+            };
+
+            addTestResult(
+                'Phase 4: Complete Fiduciary Advice',
+                'info',
+                'Testing comprehensive AI investment advisory...'
+            );
+            testAPI('POST', '/api/advisory/fiduciary-advice', sampleClientData);
+        }
+
+        // API Testing Function
+        function testAPI(method, endpoint, data = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (data && method !== 'GET') {
+                options.body = JSON.stringify(data);
+            }
+
+            fetch(endpoint, options)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .then(result => {
+                    addTestResult(
+                        `API Test: ${method} ${endpoint}`,
+                        'success',
+                        'API call successful',
+                        `Response received with status: ${result.status || 'success'}`
+                    );
+                    
+                    // Show result in modal or console
+                    console.log('API Result:', result);
+                })
+                .catch(error => {
+                    addTestResult(
+                        `API Test: ${method} ${endpoint}`,
+                        'error',
+                        `API call failed: ${error.message}`,
+                        'Check console for details'
+                    );
+                    console.error('API Error:', error);
+                });
+        }
+
+        // Specific test functions for existing features
+        function testPersonalizedAnalysis() {
+            const symbol = document.getElementById('quickSymbol').value || 'AAPL';
+            testFeature(`/personalized/${symbol}`);
+        }
+
+        function testAnalysisHistory() {
+            testFeature('/analysis-history');
+        }
+
+        function testPortfolioOptimize() {
+            testFeature('/portfolio');
+            addTestResult(
+                'Portfolio Optimization',
+                'info',
+                'Open portfolio page and select a portfolio to test optimization'
+            );
+        }
+
+        function testNaifTechnical() {
+            const symbol = document.getElementById('quickSymbol').value || 'AAPL';
+            testFeature(`/naif-model/technical/${symbol}`);
+        }
+
+        function testChatAPI() {
+            const testMessage = {
+                message: "analyze AAPL stock and provide investment recommendation"
+            };
+
+            addTestResult(
+                'Chat API Test',
+                'info',
+                'Testing chat API with sample investment query...'
+            );
+            testAPI('POST', '/api/chat', testMessage);
+        }
+
+        function testSystemStatus() {
+            addTestResult(
+                'System Status Check',
+                'info',
+                'Checking all system components...'
+            );
+
+            // Test multiple endpoints to verify system health
+            setTimeout(() => testAPI('GET', '/'), 100);
+            setTimeout(() => testAPI('GET', '/api/management/quality/2222'), 500);
+            setTimeout(() => testAPI('GET', '/api/shareholder-value/2222'), 1000);
+        }
+
+        function testPhase4APIs() {
+            addTestResult(
+                'Phase 4 API Suite',
+                'info',
+                'Testing all Phase 4 advisory endpoints...'
+            );
+            
+            setTimeout(() => testPhase4RiskAssessment(), 100);
+            setTimeout(() => testPhase4PortfolioConstruction(), 500);
+            setTimeout(() => testPhase4FiduciaryAdvice(), 1000);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            addTestResult(
+                'Dashboard Initialized',
+                'success',
+                'Testing dashboard loaded successfully. All features ready for testing.',
+                'Click any button above to test specific functionality'
+            );
+        });
+    </script>
+</body>
+</html>

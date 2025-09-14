@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Analysis Results{% endblock %}
+{% block content %}
+<div class="container">
+    {% if results %}
+        <h2>Analysis Results for {{ results.symbol }}</h2>
+        
+        <!-- Company Overview -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Company Overview</h4>
+            </div>
+            <div class="card-body">
+                <p>Company: {{ results.company_name if results.company_name is defined else results.symbol }}</p>
+                <p>Sector: {{ results.sector if results.sector is defined else 'N/A' }}</p>
+                <p>Industry: {{ results.industry if results.industry is defined else 'N/A' }}</p>
+                
+                <!-- Price Information -->
+                <div class="price-info mt-3">
+                    {% if results.current_price is defined and results.current_price > 0 %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Current Price:</strong> ${{ results.current_price|round(2) }}</p>
+                                {% if results.price_time is defined %}
+                                    <p><small class="text-muted">Price as of {{ results.price_time }}</small></p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if results.price_metrics is defined and results.price_metrics.daily_change is defined %}
+                                    <p>
+                                        <strong>Today:</strong> 
+                                        <span class="{% if results.price_metrics.daily_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ results.price_metrics.daily_change|round(2) }}% 
+                                            {% if results.price_metrics.daily_change >= 0 %}▲{% else %}▼{% endif %}
+                                        </span>
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            {% if results.price_metrics is defined and results.price_metrics.week_52_high is defined %}
+                                <p><strong>52-Week High:</strong> ${{ results.price_metrics.week_52_high|round(2) }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if results.price_metrics is defined and results.price_metrics.week_52_low is defined %}
+                                <p><strong>52-Week Low:</strong> ${{ results.price_metrics.week_52_low|round(2) }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            {% if results.price_metrics is defined and results.price_metrics.ytd_performance is defined %}
+                                <p>
+                                    <strong>YTD Performance:</strong> 
+                                    <span class="{% if results.price_metrics.ytd_performance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ results.price_metrics.ytd_performance|round(2) }}%
+                                        {% if results.price_metrics.ytd_performance >= 0 %}▲{% else %}▼{% endif %}
+                                    </span>
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if results.price_metrics is defined and results.price_metrics.sentiment_score is defined %}
+                                <p>
+                                    <strong>Sentiment Score:</strong> 
+                                    {% if results.price_metrics.sentiment_score > 70 %}
+                                        <span class="text-success">{{ results.price_metrics.sentiment_score|round(0) }}/100 (Bullish)</span>
+                                    {% elif results.price_metrics.sentiment_score > 40 %}
+                                        <span class="text-warning">{{ results.price_metrics.sentiment_score|round(0) }}/100 (Neutral)</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ results.price_metrics.sentiment_score|round(0) }}/100 (Bearish)</span>
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if results.data_source is defined %}
+                    <p class="mt-3"><small class="text-muted">Data source: {{ results.data_source }}</small></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Dividend Analysis -->
+        {% if results.dividend_metrics is defined and results.dividend_metrics %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Dividend Analysis</h4>
+            </div>
+            <div class="card-body">
+                <p>Yield: {{ results.dividend_metrics.dividend_yield|default(0)|round(2) }}%</p>
+                <p>Growth Rate: {{ results.dividend_metrics.dividend_growth|default(0)|round(2) }}%</p>
+                <p>Payout Ratio: {{ results.dividend_metrics.payout_ratio|default(0)|round(2) }}%</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Technical Analysis -->
+        {% if results.integrated_analysis is defined and results.integrated_analysis %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Technical Analysis</h4>
+            </div>
+            <div class="card-body">
+                {% if results.integrated_analysis.technical_analysis is defined %}
+                <p>Technical Score: {{ results.integrated_analysis.technical_analysis.technical_score|default(50)|round(2) }}/100</p>
+                {% if results.integrated_analysis.technical_analysis.ml_prediction is defined %}
+                <p>Expected Return: {{ results.integrated_analysis.technical_analysis.ml_prediction|default(0)|round(2) }}%</p>
+                {% endif %}
+                {% if results.integrated_analysis.technical_analysis.confidence is defined %}
+                <p>Model Confidence: {{ results.integrated_analysis.technical_analysis.confidence|default(0)|round(2) }}%</p>
+                {% endif %}
+                {% endif %}
+                
+                {% if results.integrated_analysis.fundamental_analysis is defined %}
+                    {% if results.integrated_analysis.fundamental_analysis.rotc_data is defined and results.integrated_analysis.fundamental_analysis.rotc_data %}
+                        <p>ROTC: {{ results.integrated_analysis.fundamental_analysis.rotc_data.latest_rotc|default(0)|round(2) }}%</p>
+                    {% endif %}
+                    {% if results.integrated_analysis.fundamental_analysis.growth_data is defined and results.integrated_analysis.fundamental_analysis.growth_data %}
+                        <p>Revenue Growth: {{ results.integrated_analysis.fundamental_analysis.growth_data.avg_revenue_growth|default(0)|round(2) }}%</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Risk Metrics -->
+        {% if results.integrated_analysis is defined and results.integrated_analysis.risk_metrics is defined %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Risk Assessment</h4>
+            </div>
+            <div class="card-body">
+                <p>Volatility: {{ results.integrated_analysis.risk_metrics.volatility|default(0)|round(2) }}%</p>
+                <p>Max Drawdown: {{ results.integrated_analysis.risk_metrics.max_drawdown|default(0)|round(2) }}%</p>
+                <p>Sharpe Ratio: {{ results.integrated_analysis.risk_metrics.sharpe_ratio|default(0)|round(2) }}</p>
+                <p>Risk Level: {{ results.integrated_analysis.risk_metrics.risk_level|default("Unknown") }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Portfolio Impact -->
+        {% if results.portfolio_impact is defined and results.portfolio_impact %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Portfolio Impact (10% allocation)</h4>
+            </div>
+            <div class="card-body">
+                {% if results.portfolio_impact.impact is defined %}
+                <p>Sharpe Ratio Change: {{ results.portfolio_impact.impact.sharpe_change|default(0)|round(4) }}</p>
+                <p>Volatility Change: {{ results.portfolio_impact.impact.volatility_change|default(0)|round(4) }}%</p>
+                {% if results.portfolio_impact.impact.expected_return_change is defined %}
+                <p>Expected Return Change: {{ results.portfolio_impact.impact.expected_return_change|default(0)|round(4) }}%</p>
+                {% endif %}
+                {% else %}
+                <p>No portfolio impact data available</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Recommendation -->
+        {% if results.integrated_analysis is defined and results.integrated_analysis.recommendation is defined %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Recommendation</h4>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ results.integrated_analysis.recommendation.action|default("Hold") }}</h5>
+                <p>
+                    <strong>Reasoning:</strong><br>
+                    {% if results.integrated_analysis.recommendation.reasoning is defined %}
+                        {% for reason in results.integrated_analysis.recommendation.reasoning %}
+                            • {{ reason }}<br>
+                        {% endfor %}
+                    {% else %}
+                        Insufficient data for detailed recommendation.
+                    {% endif %}
+                </p>
+                <p>
+                    <strong>Score:</strong> {{ results.integrated_analysis.integrated_score|default(50)|round(2) }}/100
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="mt-4">
+            <a href="{{ url_for('analyze') }}" class="btn btn-primary">Analyze Another Stock</a>
+            <button class="btn btn-success" onclick="addToPortfolio('{{ results.symbol }}')">Add to Portfolio</button>
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            Analysis failed. Please try another symbol.
+        </div>
+        <a href="{{ url_for('analyze') }}" class="btn btn-primary">Try Again</a>
+    {% endif %}
+</div>
+
+<script>
+function addToPortfolio(symbol) {
+    // We'll implement this function later
+    alert('Adding ' + symbol + ' to portfolio...');
+}
+</script>
+{% endblock %}

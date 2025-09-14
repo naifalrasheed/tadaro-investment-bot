@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/mnt/c/Users/alras/OneDrive/AI\\ Agent\\ Bot/investment_bot/src/venv/Scripts/python.exe run_tests.py)",
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(cp:*)",
+      "Bash(echo \"The dependencies need to be installed in your Windows conda environment. Run these commands in your Windows terminal:\")",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(pip install:*)",
+      "Bash(pip show:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python:*)",
+      "Bash(sed:*)",
+      "Bash(source:*)",
+      "Bash(which:*)",
+      "Bash(aws sts:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

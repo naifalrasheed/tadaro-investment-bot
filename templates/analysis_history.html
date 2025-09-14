@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Analysis History{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Your Analysis History</h2>
+    
+    {% if analyses %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Symbol</th>
+                        <th>Recommendation</th>
+                        <th>Technical Score</th>
+                        <th>Target Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for analysis in analyses %}
+                        <tr>
+                            <td>{{ analysis.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ analysis.symbol }}</td>
+                            <td>
+                                {% if analysis.analysis_data and analysis.analysis_data.recommendation %}
+                                    {{ analysis.analysis_data.recommendation.action }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if analysis.analysis_data and analysis.analysis_data.technical_analysis %}
+                                    {{ analysis.analysis_data.technical_analysis.technical_score|round(2) }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if analysis.analysis_data and analysis.analysis_data.valuation_analysis %}
+                                    ${{ analysis.analysis_data.valuation_analysis.target_price|round(2) }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-primary">View Details</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            You haven't performed any stock analyses yet.
+        </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('analyze') }}" class="btn btn-primary">Analyze New Stock</a>
+    </div>
+</div>
+{% endblock %}

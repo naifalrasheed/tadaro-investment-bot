@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Investment Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Investment Profile Questionnaire</h2>
+    
+    <form method="POST" action="{{ url_for('create_profile') }}">
+        <!-- Time Horizon -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Time Horizon</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label>When do you expect to start withdrawing money?</label>
+                    <select class="form-select" name="withdrawal_start" required>
+                        <option value="1">Less than 1 year</option>
+                        <option value="2">1-3 years</option>
+                        <option value="3">3-5 years</option>
+                        <option value="4">5-10 years</option>
+                        <option value="5">More than 10 years</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label>Expected withdrawal duration:</label>
+                    <select class="form-select" name="withdrawal_duration" required>
+                        <option value="1">Less than 1 year</option>
+                        <option value="2">1-3 years</option>
+                        <option value="3">3-5 years</option>
+                        <option value="4">5-10 years</option>
+                        <option value="5">More than 10 years</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Tolerance -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Risk Tolerance</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label>Investment attitude:</label>
+                    <select class="form-select" name="risk_attitude" required>
+                        <option value="1">Cannot tolerate any losses</option>
+                        <option value="2">Can tolerate small losses occasionally</option>
+                        <option value="3">Can accept moderate losses for higher returns</option>
+                        <option value="4">Can accept significant volatility</option>
+                        <option value="5">View volatility as opportunity</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label>Response to 20% drop:</label>
+                    <select class="form-select" name="loss_response" required>
+                        <option value="1">Sell everything immediately</option>
+                        <option value="2">Sell some investments</option>
+                        <option value="3">Do nothing and wait</option>
+                        <option value="4">Buy a little more</option>
+                        <option value="5">Buy a lot more</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investment Knowledge -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Investment Knowledge</h4>
+            </div>
+            <div class="card-body">
+                <select class="form-select" name="knowledge_level" required>
+                    <option value="1">None</option>
+                    <option value="2">Limited</option>
+                    <option value="3">Good</option>
+                    <option value="4">Extensive</option>
+                    <option value="5">Professional</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Sector Preferences -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Sector Preferences</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="sectors" value="Technology">
+                            <label class="form-check-label">Technology</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="sectors" value="Healthcare">
+                            <label class="form-check-label">Healthcare</label>
+                        </div>
+                    </div>
+                    <!-- Add more sectors as needed -->
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Profile</button>
+    </form>
+</div>
+{% endblock %}

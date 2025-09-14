@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Personalized Stock Recommendations{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Your Personalized Stock Recommendations</h2>
+    
+    <div class="alert alert-info">
+        <p><strong>How This Works:</strong> These recommendations are tailored to your preferences based on stocks you've liked, disliked, and your interaction patterns. The more you interact with the system, the more accurate these recommendations become.</p>
+    </div>
+    
+    <!-- Recommendations -->
+    {% if recommendations %}
+        <div class="row">
+            {% for stock in recommendations %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5>{{ stock.symbol }}</h5>
+                            <span class="badge {% if stock.score > 7 %}bg-success{% elif stock.score > 5 %}bg-primary{% else %}bg-warning{% endif %}">
+                                {{ (stock.score * 10)|round }}% Match
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            {% if stock.data %}
+                                <p><strong>Company:</strong> {{ stock.data.company_name|default(stock.symbol) }}</p>
+                                <p><strong>Sector:</strong> {{ stock.data.sector|default('N/A') }}</p>
+                                <p><strong>Current Price:</strong> ${{ stock.data.current_price|default(0)|round(2) }}</p>
+                                
+                                {% if stock.data.ytd_performance is defined %}
+                                    <p><strong>YTD Performance:</strong> 
+                                        {% if stock.data.ytd_performance > 0 %}
+                                            <span class="text-success">+{{ stock.data.ytd_performance|round(2) }}% ▲</span>
+                                        {% elif stock.data.ytd_performance < 0 %}
+                                            <span class="text-danger">{{ stock.data.ytd_performance|round(2) }}% ▼</span>
+                                        {% else %}
+                                            <span>{{ stock.data.ytd_performance|round(2) }}%</span>
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <!-- Why This Was Recommended -->
+                            {% if stock.explanation %}
+                                <div class="mt-3">
+                                    <h6>Why This Was Recommended:</h6>
+                                    <p>{{ stock.explanation }}</p>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Actions -->
+                            <div class="mt-3">
+                                <a href="{{ url_for('personalized_analysis', symbol=stock.symbol) }}" class="btn btn-sm btn-info">View Analysis</a>
+                                <div class="btn-group mt-2" role="group">
+                                    <button class="btn btn-sm btn-success" onclick="recordFeedback('{{ stock.symbol }}', 'like')">
+                                        <i class="fa fa-thumbs-up"></i> Like
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="recordFeedback('{{ stock.symbol }}', 'dislike')">
+                                        <i class="fa fa-thumbs-down"></i> Dislike
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <h5>No Recommendations Available</h5>
+            <p>We need more information about your preferences to generate personalized recommendations. Try analyzing and providing feedback on some stocks.</p>
+        </div>
+    {% endif %}
+    
+    <!-- View Preferences Button -->
+    <div class="mt-4">
+        <a href="{{ url_for('user_preferences') }}" class="btn btn-primary">
+            <i class="fa fa-user"></i> View Your Preference Profile
+        </a>
+        <a href="{{ url_for('analyze') }}" class="btn btn-success">
+            <i class="fa fa-search"></i> Analyze A Stock
+        </a>
+    </div>
+</div>
+
+<script>
+function recordFeedback(symbol, reaction) {
+    // Send feedback to server
+    fetch('/stock-feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'symbol': symbol,
+            'reaction': reaction,
+            'view_start_time': Date.now() / 1000
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to get new recommendations
+            alert('Thanks for your feedback! Refreshing recommendations...');
+            window.location.reload();
+        } else {
+            alert(data.error || 'An error occurred while recording your feedback.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error while recording your feedback.');
+    });
+}
+</script>
+{% endblock %}

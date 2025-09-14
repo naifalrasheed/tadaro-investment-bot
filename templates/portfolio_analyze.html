@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyze Portfolio: {{ portfolio.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Analyze: {{ portfolio.name }}</h1>
+        <div>
+            <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Portfolio
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Performance Chart -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Portfolio Performance</h5>
+                </div>
+                <div class="card-body">
+                    {% if performance and performance.success %}
+                    <div class="chart-container" style="position: relative; height:300px;">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-2 text-center">
+                                    <h6 class="text-muted">Total Return</h6>
+                                    <h4 class="{{ 'text-success' if performance.performance_metrics.total_return > 0 else 'text-danger' }}">
+                                        {{ "%.2f"|format(performance.performance_metrics.total_return) }}%
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-2 text-center">
+                                    <h6 class="text-muted">Annualized Return</h6>
+                                    <h4 class="{{ 'text-success' if performance.performance_metrics.annualized_return > 0 else 'text-danger' }}">
+                                        {{ "%.2f"|format(performance.performance_metrics.annualized_return) }}%
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-2 text-center">
+                                    <h6 class="text-muted">Volatility</h6>
+                                    <h4>{{ "%.2f"|format(performance.performance_metrics.annualized_volatility) }}%</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-2 text-center">
+                                    <h6 class="text-muted">Sharpe Ratio</h6>
+                                    <h4>{{ "%.2f"|format(performance.performance_metrics.sharpe_ratio) }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if 'benchmark_return' in performance.performance_metrics %}
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body py-2 text-center">
+                                    <h6 class="text-muted">Benchmark Return</h6>
+                                    <h4 class="{{ 'text-success' if performance.performance_metrics.benchmark_return > 0 else 'text-danger' }}">
+                                        {{ "%.2f"|format(performance.performance_metrics.benchmark_return) }}%
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body py-2 text-center">
+                                    <h6 class="text-muted">Excess Return</h6>
+                                    <h4 class="{{ 'text-success' if performance.performance_metrics.excess_return > 0 else 'text-danger' }}">
+                                        {{ "%.2f"|format(performance.performance_metrics.excess_return) }}%
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-warning">
+                        Performance data is not available.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Risk Analysis -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Risk Analysis</h5>
+                </div>
+                <div class="card-body">
+                    {% if performance and performance.success %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Rolling Volatility Chart -->
+                            <h5 class="mb-3">Rolling Volatility</h5>
+                            <div class="chart-container" style="position: relative; height:200px;">
+                                <canvas id="volatilityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Rolling Sharpe Ratio Chart -->
+                            <h5 class="mb-3">Rolling Sharpe Ratio</h5>
+                            <div class="chart-container" style="position: relative; height:200px;">
+                                <canvas id="sharpeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h5>Risk Assessment:</h5>
+                                <p>
+                                    {% if performance.performance_metrics.annualized_volatility < 10 %}
+                                    This portfolio has <strong>low volatility</strong> ({{ "%.2f"|format(performance.performance_metrics.annualized_volatility) }}%), indicating that it's relatively stable and suitable for conservative investors.
+                                    {% elif performance.performance_metrics.annualized_volatility < 20 %}
+                                    This portfolio has <strong>moderate volatility</strong> ({{ "%.2f"|format(performance.performance_metrics.annualized_volatility) }}%), providing a balance between stability and growth potential.
+                                    {% else %}
+                                    This portfolio has <strong>high volatility</strong> ({{ "%.2f"|format(performance.performance_metrics.annualized_volatility) }}%), suggesting it may experience significant price swings and is more suited for aggressive investors.
+                                    {% endif %}
+                                </p>
+                                <p>
+                                    {% if performance.performance_metrics.sharpe_ratio < 0.5 %}
+                                    The <strong>Sharpe ratio</strong> is <strong>low</strong> ({{ "%.2f"|format(performance.performance_metrics.sharpe_ratio) }}), indicating that the portfolio isn't providing adequate returns for the level of risk taken.
+                                    {% elif performance.performance_metrics.sharpe_ratio < 1 %}
+                                    The <strong>Sharpe ratio</strong> is <strong>below average</strong> ({{ "%.2f"|format(performance.performance_metrics.sharpe_ratio) }}), suggesting that the portfolio could be more efficient in terms of risk-adjusted returns.
+                                    {% elif performance.performance_metrics.sharpe_ratio < 1.5 %}
+                                    The <strong>Sharpe ratio</strong> is <strong>decent</strong> ({{ "%.2f"|format(performance.performance_metrics.sharpe_ratio) }}), showing a reasonable balance between risk and return.
+                                    {% else %}
+                                    The <strong>Sharpe ratio</strong> is <strong>excellent</strong> ({{ "%.2f"|format(performance.performance_metrics.sharpe_ratio) }}), indicating that the portfolio is generating strong returns relative to its risk level.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        Risk analysis data is not available.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Rebalancing Suggestions -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Rebalancing Suggestions</h5>
+                </div>
+                <div class="card-body">
+                    {% if suggestions and suggestions.success %}
+                    {% if suggestions.suggestions %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Your portfolio could benefit from rebalancing.
+                    </div>
+                    <div class="list-group">
+                        {% for suggestion in suggestions.suggestions %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">
+                                    {% if suggestion.action == 'BUY' %}
+                                    <span class="badge bg-success">BUY</span>
+                                    {% elif suggestion.action == 'SELL' %}
+                                    <span class="badge bg-danger">SELL</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ suggestion.action }}</span>
+                                    {% endif %}
+                                    
+                                    {% if suggestion.action == 'ADD_CASH' %}
+                                    ${{ "%.2f"|format(suggestion.amount) }} CASH
+                                    {% else %}
+                                    {{ suggestion.quantity }} {{ suggestion.symbol }}
+                                    {% endif %}
+                                </h5>
+                                
+                                {% if suggestion.action != 'ADD_CASH' %}
+                                <small>~${{ "%.2f"|format(suggestion.estimated_value) }}</small>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1">{{ suggestion.explanation }}</p>
+                            
+                            {% if suggestion.action == 'SELL' %}
+                            <small>Current position: {{ suggestion.current_quantity }} shares</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Your portfolio is well-balanced! No rebalancing needed at this time.
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-warning">
+                        Rebalancing suggestion data is not available.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Portfolio Stats -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Portfolio Stats</h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis and analysis.success %}
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Total Value</th>
+                                <td class="text-end">${{ "%.2f"|format(analysis.portfolio_summary.total_value) }}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Cost</th>
+                                <td class="text-end">${{ "%.2f"|format(analysis.portfolio_summary.total_cost) }}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Gain/Loss</th>
+                                <td class="text-end {{ 'text-success' if analysis.portfolio_summary.total_gain_loss > 0 else 'text-danger' }}">
+                                    ${{ "%.2f"|format(analysis.portfolio_summary.total_gain_loss) }}
+                                    ({{ "%.2f"|format(analysis.portfolio_summary.total_gain_loss_pct) }}%)
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Number of Positions</th>
+                                <td class="text-end">{{ analysis.portfolio_summary.positions_count }}</td>
+                            </tr>
+                            <tr>
+                                <th>Top Concentration</th>
+                                <td class="text-end">{{ "%.1f"|format(analysis.portfolio_summary.top_concentration) }}%</td>
+                            </tr>
+                            {% if performance and performance.success %}
+                            <tr>
+                                <th>Volatility (Annual)</th>
+                                <td class="text-end">{{ "%.2f"|format(performance.performance_metrics.annualized_volatility) }}%</td>
+                            </tr>
+                            <tr>
+                                <th>Sharpe Ratio</th>
+                                <td class="text-end">{{ "%.2f"|format(performance.performance_metrics.sharpe_ratio) }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+
+                    <div class="mt-3">
+                        <h6>Top Holdings</h6>
+                        <ol class="list-group list-group-numbered">
+                            {% for holding in analysis.top_holdings %}
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ holding.symbol }}</div>
+                                    <span class="{{ 'text-success' if holding.gain_loss_pct > 0 else 'text-danger' }}">
+                                        {{ "%.2f"|format(holding.gain_loss_pct) }}%
+                                    </span>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">{{ "%.1f"|format(holding.weight) }}%</span>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        Portfolio stats are not available.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if performance and performance.success %}
+        
+        // Convert timestamps to dates for x-axis
+        const performanceDates = Object.keys({{ performance.cumulative_returns|tojson }}).map(timestamp => new Date(parseInt(timestamp)));
+        const cumulativeReturns = Object.values({{ performance.cumulative_returns|tojson }});
+        const benchmarkReturns = {% if 'benchmark_returns' in performance %}Object.values({{ performance.benchmark_returns|tojson }}){% else %}null{% endif %};
+        
+        // Performance Chart
+        const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+        const performanceChart = new Chart(performanceCtx, {
+            type: 'line',
+            data: {
+                labels: performanceDates,
+                datasets: [
+                    {
+                        label: 'Portfolio',
+                        data: cumulativeReturns,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    },
+                    {% if 'benchmark_returns' in performance %}
+                    {
+                        label: 'Benchmark (S&P 500)',
+                        data: benchmarkReturns,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.1
+                    }
+                    {% endif %}
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Cumulative Return'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let value = context.raw;
+                                return context.dataset.label + ': ' + ((value - 1) * 100).toFixed(2) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Volatility Chart
+        const volatilityDates = Object.keys({{ performance.rolling_volatility|tojson }}).map(timestamp => new Date(parseInt(timestamp)));
+        const volatilityValues = Object.values({{ performance.rolling_volatility|tojson }});
+        
+        const volatilityCtx = document.getElementById('volatilityChart').getContext('2d');
+        const volatilityChart = new Chart(volatilityCtx, {
+            type: 'line',
+            data: {
+                labels: volatilityDates,
+                datasets: [{
+                    label: 'Rolling Volatility',
+                    data: volatilityValues.map(v => v * 100), // Convert to percentage
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Annualized Volatility (%)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Sharpe Ratio Chart
+        const sharpeDates = Object.keys({{ performance.rolling_sharpe|tojson }}).map(timestamp => new Date(parseInt(timestamp)));
+        const sharpeValues = Object.values({{ performance.rolling_sharpe|tojson }});
+        
+        const sharpeCtx = document.getElementById('sharpeChart').getContext('2d');
+        const sharpeChart = new Chart(sharpeCtx, {
+            type: 'line',
+            data: {
+                labels: sharpeDates,
+                datasets: [{
+                    label: 'Rolling Sharpe Ratio',
+                    data: sharpeValues,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Sharpe Ratio'
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

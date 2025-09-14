@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Portfolio{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Import Portfolio</h1>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Upload Portfolio File</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group mb-3">
+                    <label for="portfolio_name">Portfolio Name</label>
+                    <input type="text" class="form-control" id="portfolio_name" name="portfolio_name" required
+                           placeholder="My Portfolio">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="portfolio_file">Portfolio File</label>
+                    <input type="file" class="form-control" id="portfolio_file" name="portfolio_file" required
+                           accept=".xlsx,.csv,.pdf">
+                    <small class="form-text text-muted">
+                        Upload your portfolio in Excel (.xlsx), CSV (.csv), or PDF (.pdf) format.
+                    </small>
+                </div>
+
+                <div class="alert alert-info">
+                    <h5>Supported File Formats:</h5>
+                    <ul>
+                        <li><strong>Excel (.xlsx)</strong>: The first sheet or sheets named "Portfolio", "Holdings", or "Positions" will be used.</li>
+                        <li><strong>CSV (.csv)</strong>: Must include headers. Both comma and semicolon delimiters are supported.</li>
+                        <li><strong>PDF (.pdf)</strong>: Tables will be extracted automatically if present.</li>
+                    </ul>
+
+                    <h5>Required Columns:</h5>
+                    <ul>
+                        <li><strong>Symbol/Ticker</strong>: Stock symbol (e.g., AAPL, MSFT)</li>
+                        <li><strong>Quantity</strong>: Number of shares</li>
+                        <li><strong>Purchase Price</strong>: Price per share at purchase</li>
+                        <li><strong>Purchase Date</strong>: Date of purchase (YYYY-MM-DD or MM/DD/YYYY)</li>
+                    </ul>
+
+                    <h5>Optional Columns:</h5>
+                    <ul>
+                        <li><strong>Sector</strong>: Industry sector</li>
+                        <li><strong>Asset Class</strong>: Type of asset (Equity, Fixed Income, etc.)</li>
+                        <li><strong>Current Price</strong>: Current market price (will be fetched if not provided)</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Import Portfolio</button>
+            </form>
+        </div>
+    </div>
+
+    {% if validation_errors %}
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">Validation Errors</h5>
+        </div>
+        <div class="card-body">
+            <p>The following errors were found in your file <strong>{{ file_name }}</strong>:</p>
+
+            {% if validation_errors.missing_columns %}
+            <div class="alert alert-danger">
+                <h6>Missing Required Columns:</h6>
+                <ul>
+                    {% for column in validation_errors.missing_columns %}
+                    <li>{{ column }}</li>
+                    {% endfor %}
+                </ul>
+                <p>Your file must include all required columns. Please add the missing columns and try again.</p>
+            </div>
+            {% endif %}
+
+            {% for column, errors in validation_errors.items() %}
+            {% if column != 'missing_columns' and errors %}
+            <div class="alert alert-danger">
+                <h6>Errors in {{ column }} column:</h6>
+                <ul>
+                    {% for error in errors %}
+                    <li>Row {{ error.row }}: {{ error.error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

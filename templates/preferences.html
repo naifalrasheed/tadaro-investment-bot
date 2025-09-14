@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Your Investment Preferences{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Your Investment Preference Profile</h2>
+    
+    <div class="alert alert-info">
+        <p><strong>How This Works:</strong> This profile is built from your interactions with the system. The more stocks you analyze and provide feedback on, the more accurate this profile becomes.</p>
+    </div>
+    
+    {% if profile %}
+        <!-- Interaction Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Your Stock Interactions</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Summary</h5>
+                        <ul>
+                            <li><strong>Liked Stocks:</strong> {{ profile.interaction_stats.liked_stocks }}</li>
+                            <li><strong>Disliked Stocks:</strong> {{ profile.interaction_stats.disliked_stocks }}</li>
+                            <li><strong>Purchased Stocks:</strong> {{ profile.interaction_stats.purchased_stocks }}</li>
+                            <li><strong>Total Viewed:</strong> {{ profile.interaction_stats.total_viewed }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Most Viewed Stocks</h5>
+                        {% if profile.interaction_stats.most_viewed %}
+                            <ul>
+                                {% for stock in profile.interaction_stats.most_viewed %}
+                                    <li>{{ stock.symbol }} ({{ stock.views }} views)</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>No view data available yet</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feature Weights -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Your Feature Importance</h4>
+            </div>
+            <div class="card-body">
+                <p>These weights show which stock characteristics matter most in your investment decisions:</p>
+                
+                {% if profile.feature_weights %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Weight</th>
+                                    <th>Visual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feature, weight in profile.feature_weights.items() %}
+                                <tr>
+                                    <td>{{ feature|replace('_', ' ')|title }}</td>
+                                    <td>{{ (weight * 100)|round(1) }}%</td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" 
+                                                style="width: {{ (weight * 100)|round(1) }}%" 
+                                                aria-valuenow="{{ (weight * 100)|round(1) }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No feature weights available yet. Analyze and provide feedback on more stocks.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Preferred Sectors -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Your Preferred Sectors</h4>
+            </div>
+            <div class="card-body">
+                {% if profile.preferred_sectors %}
+                    <ul>
+                        {% for sector in profile.preferred_sectors %}
+                            <li><strong>{{ sector }}</strong></li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No sector preferences detected yet. Analyze and provide feedback on more stocks from different sectors.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Prediction Accuracy -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Model Accuracy</h4>
+            </div>
+            <div class="card-body">
+                {% if profile.prediction_accuracy %}
+                    <p>Average Prediction Error: {{ profile.prediction_accuracy|round(2) }}</p>
+                    <p>Based on your past interactions, our model has been predicting your preferences with this average error rate. Lower is better.</p>
+                {% else %}
+                    <p>No prediction data available yet. This will populate as you provide more feedback and our system makes more predictions.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Predictions -->
+        {% if predictions %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Your Recent Predictions</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Predicted</th>
+                                <th>Actual</th>
+                                <th>Error</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prediction in predictions %}
+                            <tr>
+                                <td>{{ prediction.symbol }}</td>
+                                <td>{{ prediction.predicted_value|round(2) }}</td>
+                                <td>{{ prediction.actual_value|round(2) if prediction.actual_value is not none else 'Pending' }}</td>
+                                <td>{{ prediction.error|round(2) if prediction.error is not none else 'N/A' }}</td>
+                                <td>{{ prediction.prediction_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-warning">
+            <h5>No Profile Data Available</h5>
+            <p>We need more information about your preferences to build your profile. Try analyzing and providing feedback on some stocks.</p>
+        </div>
+    {% endif %}
+    
+    <!-- Actions -->
+    <div class="mt-4">
+        <a href="{{ url_for('analyze') }}" class="btn btn-primary">
+            <i class="fa fa-search"></i> Analyze A Stock
+        </a>
+        <a href="{{ url_for('recommendations') }}" class="btn btn-success">
+            <i class="fa fa-chart-line"></i> Get Recommendations
+        </a>
+    </div>
+</div>
+{% endblock %}

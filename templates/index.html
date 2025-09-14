@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Welcome to Investment Bot</h1>
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Analyze Stock</h5>
+                                <p class="card-text">Analyze individual stocks with AI-powered insights.</p>
+                                <a href="{{ url_for('analyze') }}" class="btn btn-primary">Start Analysis</a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Add more quick action cards here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

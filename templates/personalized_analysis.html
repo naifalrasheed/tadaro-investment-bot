@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Personalized Analysis: {{ symbol }}{% endblock %}
+{% block content %}
+<div class="container">
+    {% if results %}
+        <h2>Personalized Analysis for {{ symbol }}</h2>
+        
+        <!-- Personalization Info -->
+        <div class="alert alert-info">
+            <p><strong>How This Works:</strong> This analysis weights metrics based on your past preferences. The more stocks you interact with, the more accurate it becomes.</p>
+        </div>
+        
+        <!-- Company Overview -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Company Overview</h4>
+            </div>
+            <div class="card-body">
+                <p>Company: {{ results.company_name if results.company_name is defined else symbol }}</p>
+                <p>Sector: {{ results.sector if results.sector is defined else 'N/A' }}</p>
+                <p>Industry: {{ results.industry if results.industry is defined else 'N/A' }}</p>
+                <p>Current Price: ${{ results.current_price|default(0)|round(2) }}</p>
+            </div>
+        </div>
+
+        <!-- Personalized Sentiment -->
+        {% if results.personalized_sentiment is defined %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Personalized Sentiment</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Your Personalized Score:</h5>
+                        <div class="sentiment-meter">
+                            {% if results.personalized_sentiment > 70 %}
+                                <span class="text-success h3">{{ results.personalized_sentiment|round(1) }}/100 (Very Bullish)</span>
+                            {% elif results.personalized_sentiment > 50 %}
+                                <span class="text-success h3">{{ results.personalized_sentiment|round(1) }}/100 (Bullish)</span>
+                            {% elif results.personalized_sentiment > 30 %}
+                                <span class="text-warning h3">{{ results.personalized_sentiment|round(1) }}/100 (Neutral)</span>
+                            {% elif results.personalized_sentiment > 10 %}
+                                <span class="text-danger h3">{{ results.personalized_sentiment|round(1) }}/100 (Bearish)</span>
+                            {% else %}
+                                <span class="text-danger h3">{{ results.personalized_sentiment|round(1) }}/100 (Very Bearish)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Standard Score:</h5>
+                        <div class="sentiment-meter">
+                            {% if results.original_sentiment > 70 %}
+                                <span class="text-success h4">{{ results.original_sentiment|round(1) }}/100 (Very Bullish)</span>
+                            {% elif results.original_sentiment > 50 %}
+                                <span class="text-success h4">{{ results.original_sentiment|round(1) }}/100 (Bullish)</span>
+                            {% elif results.original_sentiment > 30 %}
+                                <span class="text-warning h4">{{ results.original_sentiment|round(1) }}/100 (Neutral)</span>
+                            {% elif results.original_sentiment > 10 %}
+                                <span class="text-danger h4">{{ results.original_sentiment|round(1) }}/100 (Bearish)</span>
+                            {% else %}
+                                <span class="text-danger h4">{{ results.original_sentiment|round(1) }}/100 (Very Bearish)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Your Feature Weights -->
+                {% if results.weights %}
+                <div class="mt-4">
+                    <h5>Your Feature Weights:</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Your Weight</th>
+                                    <th>Stock Value</th>
+                                    <th>Contribution</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feature, weight in results.weights.items() %}
+                                <tr>
+                                    <td>{{ feature|replace('_', ' ')|title }}</td>
+                                    <td>{{ (weight * 100)|round(1) }}%</td>
+                                    <td>
+                                        {% if feature == 'price_momentum' %}
+                                            {{ results.price_momentum|default(0)|round(1) }}
+                                        {% elif feature == 'weekly_range' %}
+                                            {{ results.weekly_range_position|default(0)|round(2) }}
+                                        {% elif feature == 'ytd_performance' %}
+                                            {{ results.ytd_performance|default(0)|round(1) }}%
+                                        {% elif feature == 'news_sentiment' %}
+                                            {{ results.news_sentiment|default(0)|round(2) }}
+                                        {% elif feature == 'rotc' %}
+                                            {{ results.rotc|default(0)|round(1) }}%
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if feature == 'price_momentum' %}
+                                            {{ (weight * results.price_momentum|default(0) * 0.01 * 100)|round(1) }}
+                                        {% elif feature == 'weekly_range' %}
+                                            {{ (weight * results.weekly_range_position|default(0) * 100)|round(1) }}
+                                        {% elif feature == 'ytd_performance' %}
+                                            {{ (weight * results.ytd_performance|default(0) * 0.01 * 100)|round(1) }}
+                                        {% elif feature == 'news_sentiment' %}
+                                            {{ (weight * results.news_sentiment|default(0) * 100)|round(1) }}
+                                        {% elif feature == 'rotc' %}
+                                            {{ (weight * results.rotc|default(0) * 0.1 * 100)|round(1) }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recommendation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Personalized Recommendation</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        {% if results.personalized_sentiment is defined %}
+                            {% if results.personalized_sentiment > 70 %}
+                                <div class="alert alert-success">
+                                    <h5><i class="fa fa-check-circle"></i> Strong Match For Your Preferences</h5>
+                                    <p>This stock strongly aligns with your preferred investment criteria. Consider adding it to your watchlist or portfolio.</p>
+                                </div>
+                            {% elif results.personalized_sentiment > 50 %}
+                                <div class="alert alert-success">
+                                    <h5><i class="fa fa-check"></i> Good Match For Your Preferences</h5>
+                                    <p>This stock generally matches your investment style. It may be worth considering.</p>
+                                </div>
+                            {% elif results.personalized_sentiment > 30 %}
+                                <div class="alert alert-warning">
+                                    <h5><i class="fa fa-question-circle"></i> Neutral Match</h5>
+                                    <p>This stock has some positive and negative aspects based on your preferences. More research may be needed.</p>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <h5><i class="fa fa-times-circle"></i> Poor Match For Your Preferences</h5>
+                                    <p>This stock does not align well with your investment preferences. Consider looking for alternatives.</p>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h5><i class="fa fa-info-circle"></i> Not Enough Data</h5>
+                                <p>We need more information about your preferences to provide personalized recommendations. Try liking or disliking more stocks.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Feedback -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Your Feedback</h4>
+            </div>
+            <div class="card-body">
+                <p>What do you think about this stock?</p>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-success" onclick="recordFeedback('{{ symbol }}', 'like')">
+                        <i class="fa fa-thumbs-up"></i> Like
+                    </button>
+                    <button class="btn btn-danger" onclick="recordFeedback('{{ symbol }}', 'dislike')">
+                        <i class="fa fa-thumbs-down"></i> Dislike
+                    </button>
+                    <button class="btn btn-primary" onclick="recordFeedback('{{ symbol }}', 'purchase')">
+                        <i class="fa fa-shopping-cart"></i> I'd Buy This
+                    </button>
+                </div>
+                <div id="feedback-message" class="mt-2 alert" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-4">
+            <a href="{{ url_for('analyze') }}" class="btn btn-primary">Analyze Another Stock</a>
+            <a href="{{ url_for('user_preferences') }}" class="btn btn-info">
+                <i class="fa fa-sliders"></i> View Your Preferences
+            </a>
+            <a href="{{ url_for('recommendations') }}" class="btn btn-success">
+                <i class="fa fa-chart-line"></i> Get Recommendations
+            </a>
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            Analysis failed. Please try another symbol.
+        </div>
+        <a href="{{ url_for('analyze') }}" class="btn btn-primary">Try Again</a>
+    {% endif %}
+</div>
+
+<script>
+// Record the start time for tracking view duration
+const viewStartTime = Date.now() / 1000;
+
+function recordFeedback(symbol, reaction) {
+    // Calculate view duration in seconds
+    const viewDuration = (Date.now() / 1000) - viewStartTime;
+    
+    // Send feedback to server
+    fetch('/stock-feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'symbol': symbol,
+            'reaction': reaction,
+            'view_start_time': viewStartTime
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Show success message
+        const msgDiv = document.getElementById('feedback-message');
+        if (data.success) {
+            msgDiv.className = 'mt-2 alert alert-success';
+            
+            if (reaction === 'like') {
+                msgDiv.textContent = 'Thanks! We\'ve recorded that you like this stock.';
+            } else if (reaction === 'dislike') {
+                msgDiv.textContent = 'Thanks for your feedback. We\'ll recommend fewer stocks like this.';
+            } else if (reaction === 'purchase') {
+                msgDiv.textContent = 'Great choice! We\'ve recorded your purchase interest.';
+            }
+        } else {
+            msgDiv.className = 'mt-2 alert alert-danger';
+            msgDiv.textContent = data.error || 'An error occurred while recording your feedback.';
+        }
+        msgDiv.style.display = 'block';
+        
+        // Hide message after 3 seconds
+        setTimeout(() => {
+            msgDiv.style.display = 'none';
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const msgDiv = document.getElementById('feedback-message');
+        msgDiv.className = 'mt-2 alert alert-danger';
+        msgDiv.textContent = 'Network error while recording your feedback.';
+        msgDiv.style.display = 'block';
+    });
+}
+</script>
+{% endblock %}

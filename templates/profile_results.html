@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Your Investment Profile{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Your Investment Profile</h1>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Risk Profile</h3>
+                </div>
+                <div class="card-body">
+                    <h4 class="text-center mb-3">{{ profile_category }}</h4>
+                    
+                    <div class="progress mb-4" style="height: 30px;">
+                        <div class="progress-bar bg-{{ risk_level_color }}" role="progressbar" 
+                             style="width: {{ risk_tolerance }}%;" aria-valuenow="{{ risk_tolerance }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ risk_tolerance }}%
+                        </div>
+                    </div>
+                    
+                    <p class="mb-3">{{ risk_description }}</p>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-start">Conservative</span>
+                        <span class="text-center">Moderate</span>
+                        <span class="text-end">Aggressive</span>
+                    </div>
+                    
+                    <h5 class="mt-4">Key Metrics</h5>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Time Horizon:</span>
+                            <span>{{ time_horizon }} years</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Maximum Risk:</span>
+                            <span>{{ max_risk }}%</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Minimum Return:</span>
+                            <span>{{ min_return }}%</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Behavioral Analysis</h3>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Based on CFA behavioral finance concepts, here are your top behavioral tendencies:</p>
+                    
+                    {% for bias in top_biases %}
+                    <div class="card mb-3 border-{{ bias.alert_level }}">
+                        <div class="card-header bg-{{ bias.alert_level }} text-white">
+                            {{ bias.name }}
+                        </div>
+                        <div class="card-body">
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-{{ bias.alert_level }}" role="progressbar" 
+                                     style="width: {{ bias.score*10 }}%;" aria-valuenow="{{ bias.score }}" 
+                                     aria-valuemin="0" aria-valuemax="10">
+                                    {{ bias.score }}/10
+                                </div>
+                            </div>
+                            <p class="small mb-2">{{ bias.description }}</p>
+                            <div class="alert alert-light">
+                                <i class="fas fa-lightbulb"></i> <strong>Strategy:</strong> {{ bias.strategy }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Recommended Allocation</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="allocationChart" width="100%" height="250"></canvas>
+                    
+                    <h5 class="mt-4">Asset Class Breakdown</h5>
+                    <ul class="list-group">
+                        {% for asset_class, percentage in asset_allocation.items() %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ asset_class|capitalize }}</span>
+                            <span>{{ percentage }}%</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h5 class="mt-4">Preferred Sectors</h5>
+                    <p>
+                        {% for sector in preferred_sectors %}
+                        <span class="badge bg-primary me-1">{{ sector }}</span>
+                        {% endfor %}
+                    </p>
+                    
+                    <h5 class="mt-4">Excluded Sectors</h5>
+                    <p>
+                        {% for sector in excluded_sectors %}
+                        <span class="badge bg-danger me-1">{{ sector }}</span>
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3>Investment Policy Statement</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Investment Objectives</h5>
+                            <p>{{ ips.investment_objectives.description }}</p>
+                            <h6>Return Target</h6>
+                            <p>{{ ips.investment_objectives.return_target }} - {{ ips.investment_objectives.primary_objectives }}</p>
+                            
+                            <h5 class="mt-4">Risk Constraints</h5>
+                            <ul>
+                                <li><strong>Maximum Volatility:</strong> {{ ips.risk_constraints.max_volatility }}</li>
+                                <li><strong>Maximum Drawdown:</strong> {{ ips.risk_constraints.max_drawdown }}</li>
+                                <li><strong>VaR Limit:</strong> {{ ips.risk_constraints.var_limit }}</li>
+                                <li><strong>Beta Target:</strong> {{ ips.risk_constraints.beta_target }}</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Time Horizon</h5>
+                            <p>{{ ips.time_horizon }}</p>
+                            
+                            <h5 class="mt-4">Liquidity Requirements</h5>
+                            <ul>
+                                <li><strong>Cash Allocation:</strong> {{ ips.liquidity_requirements.cash_allocation }}</li>
+                                <li><strong>Illiquid Assets Maximum:</strong> {{ ips.liquidity_requirements.illiquid_assets_max }}</li>
+                                <li><strong>Emergency Fund:</strong> {{ ips.liquidity_requirements.emergency_fund }}</li>
+                            </ul>
+                            
+                            <h5 class="mt-4">Rebalancing Policy</h5>
+                            <p>{{ ips.rebalancing_policy.frequency }}</p>
+                            <p>{{ ips.rebalancing_policy.thresholds }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4 mb-5">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('index') }}" class="btn btn-primary me-2">Home</a>
+            <a href="{{ url_for('portfolio') }}" class="btn btn-success me-2">My Portfolios</a>
+            <a href="{{ url_for('user_preferences') }}" class="btn btn-secondary">Edit Preferences</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Allocation chart
+    const allocationCtx = document.getElementById('allocationChart').getContext('2d');
+    const allocationData = {
+        labels: [{% for asset_class in asset_allocation %}'{{ asset_class|capitalize }}',{% endfor %}],
+        datasets: [{
+            data: [{% for asset_class, percentage in asset_allocation.items() %}{{ percentage }},{% endfor %}],
+            backgroundColor: [
+                '#4e73df',
+                '#1cc88a',
+                '#36b9cc',
+                '#f6c23e',
+                '#e74a3b',
+                '#858796'
+            ],
+            hoverOffset: 4
+        }]
+    };
+    
+    new Chart(allocationCtx, {
+        type: 'doughnut',
+        data: allocationData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

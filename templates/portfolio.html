@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}My Portfolios{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Portfolios</h1>
+        <div>
+            <a href="{{ url_for('import_portfolio') }}" class="btn btn-primary">
+                <i class="fas fa-file-import"></i> Import Portfolio
+            </a>
+        </div>
+    </div>
+
+    {% if portfolios %}
+    <div class="row">
+        {% for portfolio in portfolios %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">{{ portfolio.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Portfolio Overview</h6>
+                    {% if portfolio.stocks %}
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Total Value</strong></p>
+                            <h4>${{ "%.2f"|format(portfolio.stocks.total_value if portfolio.stocks.total_value else 0) }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Positions</strong></p>
+                            <h4>{{ portfolio.stocks.positions_count if portfolio.stocks.positions_count else 0 }}</h4>
+                        </div>
+                    </div>
+                    
+                    {% if portfolio.stocks.holdings %}
+                    <div class="mb-3">
+                        <h6>Top Holdings</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for holding in portfolio.stocks.holdings[:3] %}
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                                <span>{{ holding.symbol }}</span>
+                                <span>{{ "%.1f"|format(holding.weight * 100) }}%</span>
+                            </li>
+                            {% endfor %}
+                            {% if portfolio.stocks.holdings|length > 3 %}
+                            <li class="list-group-item px-0 py-2 text-muted">
+                                + {{ portfolio.stocks.holdings|length - 3 }} more holdings
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="alert alert-warning">
+                        No portfolio data available
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio.id) }}" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="{{ url_for('portfolio_analyze', portfolio_id=portfolio.id) }}" class="btn btn-success">
+                            <i class="fas fa-chart-line"></i> Analyze
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    Created: {{ portfolio.created_date.strftime('%Y-%m-%d') }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-folder-open fa-5x text-muted"></i>
+            </div>
+            <h3>No Portfolios Yet</h3>
+            <p class="text-muted">Import your portfolio to get started with analysis and optimization.</p>
+            <a href="{{ url_for('import_portfolio') }}" class="btn btn-primary mt-2">
+                <i class="fas fa-file-import"></i> Import Portfolio
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if purchased_stocks %}
+    <div class="card mb-4 mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Watched Stocks</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Price</th>
+                            <th>Change</th>
+                            <th>Sentiment</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in purchased_stocks %}
+                        <tr>
+                            <td>{{ stock.symbol }}</td>
+                            <td>${{ "%.2f"|format(stock.data.current_price) }}</td>
+                            <td class="{{ 'text-success' if stock.data.day_change > 0 else 'text-danger' }}">
+                                {{ "%.2f"|format(stock.data.day_change_percent) }}%
+                            </td>
+                            <td>
+                                <div class="progress">
+                                    {% if stock.data.sentiment_score > 0 %}
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ stock.data.sentiment_score }}%" 
+                                         aria-valuenow="{{ stock.data.sentiment_score }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ stock.data.sentiment_score }}
+                                    </div>
+                                    {% else %}
+                                    <div class="progress-bar bg-danger" role="progressbar" 
+                                         style="width: {{ stock.data.sentiment_score * -1 }}%" 
+                                         aria-valuenow="{{ stock.data.sentiment_score * -1 }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ stock.data.sentiment_score }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('personalized_analysis', symbol=stock.symbol) }}" class="btn btn-sm btn-primary">
+                                    Analyze
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Investment Bot - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head_scripts %}{% endblock %}
+    {% block styles %}{% endblock %}
+</head>
+<body class="{% block bodyclass %}{% endblock %}">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-chart-line me-2"></i>Investment Bot
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i> Home
+                        </a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('analyze') }}">
+                            <i class="fas fa-chart-line me-1"></i> Analyze Stock
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('portfolio') }}">
+                            <i class="fas fa-briefcase me-1"></i> Portfolios
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recommendations') }}">
+                            <i class="fas fa-star me-1"></i> Recommendations
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chat_view') }}">
+                            <i class="fas fa-comments me-1"></i> Chat Assistant
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="naifModelDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-chart-pie me-1"></i> Naif Al-Rasheed Model
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="naifModelDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('naif_model_screen') }}">
+                                    <i class="fas fa-filter me-2"></i> Stock Screening
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('naif_sector_analysis') }}">
+                                    <i class="fas fa-building me-2"></i> Sector Analysis
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('view_profile') }}">
+                                    <i class="fas fa-id-card me-2"></i> View Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('profile_results') }}">
+                                    <i class="fas fa-chart-bar me-2"></i> Investment Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('user_preferences') }}">
+                                    <i class="fas fa-sliders-h me-2"></i> Preferences
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('analysis_history') }}">
+                                    <i class="fas fa-history me-2"></i> Analysis History
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">
+                            <i class="fas fa-user-plus me-1"></i> Register
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content wrapper -->
+    <div class="main-content">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="container mt-3">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Main content area -->
+                <div class="col-lg-9">
+                    {% block content %}{% endblock %}
+                </div>
+                
+                <!-- Chat assistant sidebar -->
+                <div class="col-lg-3">
+                    <div class="card claude-chatbot">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-robot me-2"></i>Investment Assistant
+                            </h5>
+                            <button type="button" class="btn-close" id="close-assistant" aria-label="Close"></button>
+                        </div>
+                        <div class="card-body chat-container" id="chat-messages">
+                            <div class="assistant-message">
+                                Hello! I'm your investment assistant. Ask me about stocks, investment strategies, or portfolio analysis.
+                            </div>
+                        </div>
+                        <div class="card-footer p-2">
+                            <form id="chat-form" class="d-flex">
+                                <input type="text" class="form-control me-2" id="user-message" placeholder="Ask a question...">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-chart-line me-2"></i>Investment Bot</h5>
+                    <p>Advanced stock analysis and portfolio optimization tool with built-in Naif Al-Rasheed investment model</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Features</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('analyze') }}">Stock Analysis</a></li>
+                        <li><a href="{{ url_for('portfolio') }}">Portfolio Management</a></li>
+                        <li><a href="{{ url_for('recommendations') }}">Recommendations</a></li>
+                        <li><a href="{{ url_for('naif_model_screen') }}">Naif Al-Rasheed Model</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2025 Investment Bot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Claude AI Chat Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chat-messages');
+            const chatForm = document.getElementById('chat-form');
+            const userInput = document.getElementById('user-message');
+            const closeBtn = document.getElementById('close-assistant');
+            
+            // Function to add a message to the chat
+            function addMessage(content, isUser = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = isUser ? 'user-message' : 'assistant-message';
+                messageDiv.textContent = content;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // Handle form submission
+            chatForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const message = userInput.value.trim();
+                if (!message) return;
+                
+                // Add user message to chat
+                addMessage(message, true);
+                userInput.value = '';
+                
+                // Show thinking indicator
+                const thinkingDiv = document.createElement('div');
+                thinkingDiv.className = 'assistant-message thinking';
+                thinkingDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+                chatContainer.appendChild(thinkingDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Send message to server
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove thinking indicator
+                    chatContainer.removeChild(thinkingDiv);
+                    
+                    // Add assistant response
+                    addMessage(data.response);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Remove thinking indicator
+                    chatContainer.removeChild(thinkingDiv);
+                    // Add error message
+                    addMessage('Sorry, I encountered an error. Please try again.');
+                });
+            });
+            
+            // Handle close button
+            closeBtn.addEventListener('click', function() {
+                const chatbot = document.querySelector('.claude-chatbot');
+                chatbot.classList.add('minimized');
+                
+                // Add minimize button
+                const minimizedButton = document.createElement('button');
+                minimizedButton.className = 'btn btn-primary chat-toggle';
+                minimizedButton.innerHTML = '<i class="fas fa-comments"></i>';
+                document.body.appendChild(minimizedButton);
+                
+                // Handle minimized button click
+                minimizedButton.addEventListener('click', function() {
+                    chatbot.classList.remove('minimized');
+                    document.body.removeChild(minimizedButton);
+                });
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+    
+    <!-- Bootstrap initialization for navbar -->
+    <script>
+        // Ensure dropdowns and other Bootstrap components are initialized
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdowns = document.querySelectorAll('.dropdown-toggle');
+            dropdowns.forEach(function(dropdown) {
+                new bootstrap.Dropdown(dropdown);
+            });
+            
+            var navbarToggler = document.querySelector('.navbar-toggler');
+            if (navbarToggler) {
+                navbarToggler.addEventListener('click', function() {
+                    var navbarNav = document.getElementById('navbarNav');
+                    if (navbarNav.classList.contains('show')) {
+                        navbarNav.classList.remove('show');
+                    } else {
+                        navbarNav.classList.add('show');
+                    }
+                });
+            }
+            
+            // Make sure navbar is visible on chat page
+            if (document.body.classList.contains('chat-page')) {
+                var navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    navbar.style.display = 'flex';
+                    navbar.style.visibility = 'visible';
+                    navbar.style.opacity = '1';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
