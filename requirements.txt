@@ -9,8 +9,7 @@ gunicorn==21.2.0
 
 # Database drivers - Production compatible
 SQLAlchemy==2.0.23
-psycopg2-binary==2.9.9; python_version<"3.13"
-psycopg[binary]>=3.1.0; python_version>="3.13"
+psycopg2-binary==2.9.9
 alembic==1.12.1
 
 # Financial data APIs

@@ -15,10 +15,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
+    - name: Set up Python 3.9
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.9'
 
     - name: Install dependencies
       run: |
@@ -58,7 +58,7 @@ jobs:
               - pip install --upgrade pip
               - pip install -r requirements.txt
         run:
-          runtime-version: '3.11'
+          runtime-version: '3.9'
           command: gunicorn --bind 0.0.0.0:8000 app:app
           network:
             port: 8000
