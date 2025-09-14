@@ -26,7 +26,10 @@
       "Bash(git remote add:*)",
       "Bash(git push:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
