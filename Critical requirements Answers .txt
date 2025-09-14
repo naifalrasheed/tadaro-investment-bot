@@ -1,11 +1,11 @@
-Project Requirements Response – AI Investment Bot
+Project Requirements Response ï¿½ AI Investment Bot
 A. Infrastructure Requirements
 * AWS Account: Yes, existing account and I ran these earlier and it is ready now (PS C:\Users\alras> aws configure
 * AWS Access Key ID [****************0843]: 593793060843
 * AWS Secret Access Key [****************ount]:
 * PS C:\Users\alras> AWS configure
-* AWS Access Key ID [****************0843]: AKIAYUQGTB7VUCADSIPF
-* AWS Secret Access Key [****************ount]: VHS/YYTjFWCGfpQcw8wSKE4vTLO4uQ5npihTP2bp
+* AWS Access Key ID [****************0843]: [REDACTED]
+* AWS Secret Access Key [****************ount]: [REDACTED]
 * Default region name [us-east-1]: us-east-1
 * Default output format [json]: json
 * PS C:\Users\alras> aws sts get-caller-identity
@@ -69,7 +69,7 @@ o Mobile Support: Low for MVP.
 E. Business & Legal Requirements
 * Fiduciary Advisor Mode:
 o Legal Counsel: Internal legal available, not full investment license yet.
-o Disclaimers: Standard “not financial advice” disclaimer required.
+o Disclaimers: Standard ï¿½not financial adviceï¿½ disclaimer required.
 o Geographic Restrictions: Saudi & US only at MVP.
 o Investment Minimums: None.
 o Risk Disclosures: Generic risk disclaimer sufficient.
@@ -86,7 +86,7 @@ o CI/CD: GitHub Actions.
 o Monitoring: AWS CloudWatch only.
 o Error Tracking: Sentry.
 * Team Access:
-o AWS: I’ll hold admin; devs get scoped permissions.
+o AWS: Iï¿½ll hold admin; devs get scoped permissions.
 o Repository: Myself + 2 devs.
 o Production Access: Only me.
 o Monitoring Alerts: Send to my email.

@@ -17,7 +17,15 @@
       "Bash(sed:*)",
       "Bash(source:*)",
       "Bash(which:*)",
-      "Bash(aws sts:*)"
+      "Bash(aws sts:*)",
+      "Bash(git config:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(gh:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []

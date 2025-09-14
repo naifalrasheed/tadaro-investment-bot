@@ -137,8 +137,8 @@ User provided updates on infrastructure progress and asked for help with a criti
 
 2. **GitHub Secrets Configuration** (Required for automated deployment):
    ```
-   AWS_ACCESS_KEY_ID=AKIAYUQGTB7VUCADSIPF
-   AWS_SECRET_ACCESS_KEY=VHS/YYTjFWCGfpQcw8wSKE4vTLO4uQ5npihTP2bp
+   AWS_ACCESS_KEY_ID=[Your AWS Access Key]
+   AWS_SECRET_ACCESS_KEY=[Your AWS Secret Key]
    DATABASE_URL=postgresql://naif_alrasheed:CodeNaif123@db-tradaro-ai.cmp4g2awon0q.us-east-1.rds.amazonaws.com:5432/postgres
    GOOGLE_CLIENT_ID=99358822617-kibuq88hflnuu8hsmob73u0d7oltff92.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=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
