@@ -95,3 +95,11 @@ docs/_build/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# AWS credentials and sensitive files
+*.docx
+*credentials*.csv
+*access*key*
+AWS*Access*Key*
+*.pem
+*.key
