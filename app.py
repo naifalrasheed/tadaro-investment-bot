@@ -59,9 +59,18 @@ def ensure_json_serializable(obj):
 
 app = Flask(__name__)
 
-# Configuration - use environment variable or fallback to fixed development key
+# Configuration - use environment variables with fallbacks
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-a1b2c3d4e5f6g7h8i9j0')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment_bot.db'
+
+# Database configuration - PostgreSQL for production, SQLite for development
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # Production: Use PostgreSQL from environment variable
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Development: Use SQLite as fallback
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment_bot.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json_encoder = CustomJSONEncoder  # Use our custom JSON encoder
 
@@ -2676,9 +2685,43 @@ def initialize():
     except Exception as e:
         print(f"Error clearing cache on startup: {e}")
 
+def init_database():
+    """Safely initialize database tables"""
+    try:
+        with app.app_context():
+            # Only create tables if they don't exist
+            db.create_all()
+            print("Database tables initialized successfully")
+            return True
+    except Exception as e:
+        print(f"Warning: Could not initialize database: {e}")
+        print("This is normal if database is not yet available")
+        return False
+
+@app.route('/init-db')
+def init_db_route():
+    """Initialize database tables - for production setup"""
+    try:
+        if init_database():
+            return jsonify({
+                'status': 'success',
+                'message': 'Database tables initialized successfully',
+                'database_url': 'configured' if os.environ.get('DATABASE_URL') else 'not_configured'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to initialize database tables'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Database initialization error: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        # Run initialization here instead of using before_first_request
-        initialize()
+    # Only run database initialization in development mode
+    init_database()
+    # Run initialization here instead of using before_first_request
+    initialize()
     app.run(host='0.0.0.0', port=5001, debug=True)
