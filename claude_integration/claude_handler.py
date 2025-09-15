@@ -3,14 +3,29 @@ from typing import Dict, Any, List, Optional
 import logging
 import json
 import datetime
+import os
 
 class ClaudeHandler:
     def __init__(self):
-        self.api_key = "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"
-        self.anthropic = Anthropic(api_key=self.api_key)
+        # Use environment variable for API key
+        self.api_key = os.environ.get('CLAUDE_API_KEY')
+        self.anthropic = None  # Initialize lazily
         self.model = "claude-3-opus-20240229"  # Using the highest capability model for best investment advice
         self.logger = logging.getLogger(__name__)
         self.conversation_history = {}  # Store chat history by user_id
+
+    def _get_client(self):
+        """Lazily initialize Anthropic client"""
+        if self.anthropic is None:
+            if not self.api_key:
+                self.logger.error("CLAUDE_API_KEY not found in environment variables")
+                raise ValueError("Claude API key not configured")
+            try:
+                self.anthropic = Anthropic(api_key=self.api_key)
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Anthropic client: {e}")
+                raise
+        return self.anthropic
 
     def enhance_analysis(self, stock_data: Dict, technical_analysis: Dict, fundamental_analysis: Dict) -> Dict:
         """Enhance stock analysis with Claude's insights"""
@@ -35,7 +50,7 @@ class ClaudeHandler:
             5. Potential catalysts to watch
             """
 
-            response = self.anthropic.messages.create(
+            response = self._get_client().messages.create(
                 model=self.model,
                 max_tokens=4096,
                 messages=[{
@@ -83,7 +98,7 @@ class ClaudeHandler:
             5. Missing important factors
             """
 
-            response = self.anthropic.messages.create(
+            response = self._get_client().messages.create(
                 model=self.model,
                 max_tokens=2048,
                 messages=[{
@@ -179,7 +194,7 @@ class ClaudeHandler:
             history_messages.append({"role": "user", "content": full_message})
             
             # Call Claude API - system prompt is a separate parameter
-            response = self.anthropic.messages.create(
+            response = self._get_client().messages.create(
                 model=self.model,
                 max_tokens=4096,
                 system=system_prompt,

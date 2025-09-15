@@ -10,7 +10,15 @@ from user_profiling.profile_analyzer import ProfileAnalyzer
 from ml_components.adaptive_learning_db import AdaptiveLearningDB
 import os
 import time
+import logging
 from datetime import datetime, timedelta
+
+# Configure logging for production
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 from ml_components.naif_alrasheed_model import NaifAlRasheedModel
 from claude_integration.chat_interface import ChatInterface
 from claude_integration.claude_handler import ClaudeHandler
@@ -58,6 +66,7 @@ def ensure_json_serializable(obj):
     return obj
 
 app = Flask(__name__)
+logger.info("Flask app created successfully")
 
 # Configuration - use environment variables with fallbacks
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-a1b2c3d4e5f6g7h8i9j0')
