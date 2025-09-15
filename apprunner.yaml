@@ -23,5 +23,15 @@ run:
       value: app.py
     - name: PORT
       value: "8000"
-    # Non-sensitive environment variables only
-    # Sensitive variables will be added via AWS App Runner Console after deployment
+    - name: DATABASE_URL
+      value: postgresql://naif_alrasheed:CodeNaif123@db-tradaro-ai.cmp4g2awon0q.us-east-1.rds.amazonaws.com:5432/postgres
+    - name: GOOGLE_CLIENT_ID
+      value: 99358822617-kibuq88hflnuu8hsmob73u0d7oltff92.apps.googleusercontent.com
+    - name: GOOGLE_CLIENT_SECRET
+      value: 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
+    - name: CLAUDE_API_KEY
+      value: PLACEHOLDER_FOR_GITHUB_SECRET
+    - name: TWELVEDATA_API_KEY
+      value: 71cdbb03b46645628e8416eeb4836c99
+    - name: SECRET_KEY
+      value: production-secret-key-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
