@@ -17,21 +17,25 @@ run:
     port: 8000
     env: PORT
   env:
-    - name: FLASK_ENV
-      value: production
+    # Non-sensitive environment variables (safe to put here)
     - name: FLASK_APP
       value: app.py
-    - name: PORT
-      value: "8000"
-    - name: DATABASE_URL
-      value: postgresql://naif_alrasheed:CodeNaif123@db-tradaro-ai.cmp4g2awon0q.us-east-1.rds.amazonaws.com:5432/postgres
-    - name: GOOGLE_CLIENT_ID
-      value: 99358822617-kibuq88hflnuu8hsmob73u0d7oltff92.apps.googleusercontent.com
-    - name: GOOGLE_CLIENT_SECRET
-      value: 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
+  secrets:
+    # Sensitive data - ARN references only (replace 593793060843 with your account ID if different)
     - name: CLAUDE_API_KEY
-      value: PLACEHOLDER_FOR_GITHUB_SECRET
-    - name: TWELVEDATA_API_KEY
-      value: 71cdbb03b46645628e8416eeb4836c99
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/claude-api-key"
+    - name: DATABASE_URL
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/database-url"
+    - name: GOOGLE_CLIENT_SECRET
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/google-client-secret"
     - name: SECRET_KEY
-      value: production-secret-key-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key"
+    - name: TWELVEDATA_API_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/twelvedata-api-key"
+    # Non-sensitive parameters from Parameter Store
+    - name: GOOGLE_CLIENT_ID
+      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/google-client-id"
+    - name: FLASK_ENV
+      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/flask-env"
+    - name: PORT
+      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/port"
