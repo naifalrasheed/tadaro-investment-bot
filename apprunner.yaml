@@ -16,8 +16,18 @@ run:
     # Non-sensitive environment variables (safe to put here)
     - name: FLASK_APP
       value: app.py
-  secrets:
-    # Sensitive data - ARN references to AWS Secrets Manager
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "INFO"
+    # Parameters from Systems Manager Parameter Store
+    - name: GOOGLE_CLIENT_ID
+      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/google-client-id"
+    - name: FLASK_ENV
+      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/flask-env"
+    - name: PORT
+      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/port"
+    # Sensitive data from AWS Secrets Manager
     - name: CLAUDE_API_KEY
       value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/claude-api-key"
     - name: DATABASE_URL
@@ -28,10 +38,3 @@ run:
       value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key"
     - name: TWELVEDATA_API_KEY
       value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/twelvedata-api-key"
-    # Non-sensitive parameters from Parameter Store
-    - name: GOOGLE_CLIENT_ID
-      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/google-client-id"
-    - name: FLASK_ENV
-      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/flask-env"
-    - name: PORT
-      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/port"
