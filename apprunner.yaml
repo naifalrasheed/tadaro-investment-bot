@@ -3,15 +3,11 @@ runtime: python311
 build:
   commands:
     build:
-      - pip3 install --use-deprecated=legacy-resolver -r requirements.txt
-  env:
-    - name: PYTHONDONTWRITEBYTECODE
-      value: "1"
-    - name: PYTHONUNBUFFERED
-      value: "1"
+      - pip3 install --upgrade pip
+      - pip3 install -r requirements.txt
 run:
   runtime-version: "3.11"
-  command: python3 -m gunicorn app:app --bind 0.0.0.0:8000 --workers 2 --worker-class sync --timeout 120 --access-logfile - --error-logfile - --log-level info
+  command: python3 -m gunicorn app:app --bind 0.0.0.0:8000 --workers 2
   network:
     port: 8000
     env: PORT
