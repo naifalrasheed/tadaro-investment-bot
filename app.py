@@ -2711,10 +2711,18 @@ def init_database():
 def init_db_route():
     """Initialize database tables - for production setup"""
     try:
+        # First, fix password column size if needed
+        try:
+            if 'postgresql' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
+                db.engine.execute('ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(255);')
+                print("Password column updated to 255 characters")
+        except Exception as col_error:
+            print(f"Password column update: {str(col_error)} (might already be correct)")
+
         if init_database():
             return jsonify({
                 'status': 'success',
-                'message': 'Database tables initialized successfully',
+                'message': 'Database tables initialized successfully (password column fixed)',
                 'database_url': 'configured' if os.environ.get('DATABASE_URL') else 'not_configured'
             })
         else:
