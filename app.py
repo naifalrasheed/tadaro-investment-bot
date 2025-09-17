@@ -2728,6 +2728,30 @@ def init_db_route():
             'message': f'Database initialization error: {str(e)}'
         }), 500
 
+@app.route('/fix-password-column')
+def fix_password_column():
+    """Fix password_hash column size - one-time migration"""
+    try:
+        # Check if we're using PostgreSQL
+        if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+            # PostgreSQL syntax to increase column size
+            sql = 'ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(255);'
+            db.engine.execute(sql)
+            return jsonify({
+                'status': 'success',
+                'message': 'Password hash column updated to 255 characters'
+            })
+        else:
+            return jsonify({
+                'status': 'info',
+                'message': 'SQLite detected - column size fix not needed'
+            })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Migration failed: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     # Only run database initialization in development mode
     init_database()
