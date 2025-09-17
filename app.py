@@ -2740,24 +2740,33 @@ def init_db_route():
 def fix_password_column():
     """Fix password_hash column size - one-time migration"""
     try:
-        # Check if we're using PostgreSQL
-        if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+        # Check database type
+        db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+
+        if 'postgresql' in db_url:
             # PostgreSQL syntax to increase column size
             sql = 'ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(255);'
-            db.engine.execute(sql)
+
+            # Execute with explicit connection
+            with db.engine.connect() as connection:
+                result = connection.execute(sql)
+
             return jsonify({
                 'status': 'success',
-                'message': 'Password hash column updated to 255 characters'
+                'message': 'Password hash column updated to 255 characters',
+                'database_type': 'postgresql'
             })
         else:
             return jsonify({
                 'status': 'info',
-                'message': 'SQLite detected - column size fix not needed'
+                'message': 'SQLite detected - column size fix not needed',
+                'database_type': 'sqlite'
             })
     except Exception as e:
         return jsonify({
             'status': 'error',
-            'message': f'Migration failed: {str(e)}'
+            'message': f'Migration failed: {str(e)}',
+            'database_type': 'postgresql' if 'postgresql' in db_url else 'unknown'
         }), 500
 
 if __name__ == '__main__':
