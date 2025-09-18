@@ -2827,6 +2827,19 @@ def recreate_user_table():
             'message': f'Table recreation failed: {str(e)}'
         }), 500
 
+@app.route('/version-check')
+def version_check():
+    """Check which version of password hashing is deployed"""
+    from werkzeug.security import generate_password_hash
+    test_hash = generate_password_hash('test123', method='pbkdf2:sha256')
+    return jsonify({
+        'status': 'success',
+        'hash_method': 'pbkdf2:sha256',
+        'hash_length': len(test_hash),
+        'sample_hash': test_hash[:50] + '...',
+        'deployment_time': '2025-09-18-07:00'
+    })
+
 if __name__ == '__main__':
     # Only run database initialization in development mode
     init_database()
