@@ -2711,18 +2711,33 @@ def init_database():
 def init_db_route():
     """Initialize database tables - for production setup"""
     try:
-        # First, fix password column size if needed
-        try:
-            if 'postgresql' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
-                db.engine.execute('ALTER TABLE "user" ALTER COLUMN password_hash TYPE VARCHAR(255);')
-                print("Password column updated to 255 characters")
-        except Exception as col_error:
-            print(f"Password column update: {str(col_error)} (might already be correct)")
+        # Recreate user table with correct password column size
+        db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        if 'postgresql' in db_url:
+            try:
+                with db.engine.connect() as connection:
+                    # Drop and recreate user table with correct size
+                    connection.execute('DROP TABLE IF EXISTS "user" CASCADE;')
+
+                    create_sql = '''
+                    CREATE TABLE "user" (
+                        id SERIAL PRIMARY KEY,
+                        username VARCHAR(80) UNIQUE NOT NULL,
+                        email VARCHAR(120) UNIQUE NOT NULL,
+                        password_hash VARCHAR(255),
+                        has_completed_profiling BOOLEAN DEFAULT false
+                    );
+                    '''
+                    connection.execute(create_sql)
+                    connection.commit()
+                    print("User table recreated with 255-character password column")
+            except Exception as table_error:
+                print(f"Table recreation: {str(table_error)}")
 
         if init_database():
             return jsonify({
                 'status': 'success',
-                'message': 'Database tables initialized successfully (password column fixed)',
+                'message': 'Database tables initialized successfully (user table recreated with 255-char password)',
                 'database_url': 'configured' if os.environ.get('DATABASE_URL') else 'not_configured'
             })
         else:
