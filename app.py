@@ -2769,6 +2769,49 @@ def fix_password_column():
             'database_type': 'postgresql' if 'postgresql' in db_url else 'unknown'
         }), 500
 
+@app.route('/recreate-user-table')
+def recreate_user_table():
+    """Drop and recreate user table with correct password column size"""
+    try:
+        db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+
+        if 'postgresql' not in db_url:
+            return jsonify({
+                'status': 'error',
+                'message': 'This endpoint only works with PostgreSQL'
+            }), 400
+
+        with db.engine.connect() as connection:
+            # Drop the user table (cascade to handle foreign keys)
+            connection.execute('DROP TABLE IF EXISTS "user" CASCADE;')
+
+            # Recreate user table with correct password column size
+            create_sql = '''
+            CREATE TABLE "user" (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(80) UNIQUE NOT NULL,
+                email VARCHAR(120) UNIQUE NOT NULL,
+                password_hash VARCHAR(255),
+                has_completed_profiling BOOLEAN DEFAULT false
+            );
+            '''
+            connection.execute(create_sql)
+
+            # Commit the transaction
+            connection.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'User table recreated with 255-character password column',
+            'action': 'table_recreated'
+        })
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Table recreation failed: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     # Only run database initialization in development mode
     init_database()
