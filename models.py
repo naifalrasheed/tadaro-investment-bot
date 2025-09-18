@@ -25,7 +25,8 @@ class User(UserMixin, db.Model):
     has_completed_profiling = db.Column(db.Boolean, default=False)
     
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        # Use pbkdf2:sha256 method which generates shorter hashes (~87 chars vs 169 chars)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
