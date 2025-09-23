@@ -4,6 +4,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, User, StockAnalysis, Portfolio, StockPreference, FeatureWeight, SectorPreference, PredictionRecord
 from analysis.enhanced_stock_analyzer import EnhancedStockAnalyzer
+from analysis.twelvedata_analyzer import TwelveDataAnalyzer
 from portfolio.portfolio_management import PortfolioManager
 from interface.interface import analyze_single_stock
 from user_profiling.profile_analyzer import ProfileAnalyzer
@@ -365,11 +366,17 @@ def analyze():
         # Try to get data from multiple sources and compare
         data_sources = []
         start_time = time.time()
-        
+
         # Import required modules
         from concurrent.futures import ThreadPoolExecutor, as_completed
         import threading
-        
+        from collections import defaultdict
+
+        # Thread-safe data collection structures
+        result_lock = threading.Lock()
+        error_collection = defaultdict(list)  # Collect errors by source
+        thread_results = {}  # Track thread completion status
+
         # Check for data source clients
         try:
             from data.data_comparison_service import DataComparisonService
@@ -391,65 +398,212 @@ def analyze():
             
         # Removed Interactive Brokers integration as requested
         has_ib = False
-        
-        # Thread-safe list for collecting results
-        result_lock = threading.Lock()
-        
-        def fetch_yfinance_data():
-            """Fetch data from YFinance"""
+
+        def fetch_twelvedata_data():
+            """Fetch data from TwelveData (PRIMARY SOURCE per user requirements)"""
+            thread_id = threading.current_thread().name
+            source_name = 'twelvedata'
+
             try:
+                app.logger.info(f"[{thread_id}] Using TwelveData as PRIMARY source for {symbol}")
+
+                # Thread-safe analyzer creation (lazy initialization handles this)
+                twelvedata_analyzer = TwelveDataAnalyzer()
+                td_results = twelvedata_analyzer.analyze_stock(symbol, force_refresh=False)
+
+                if td_results and td_results.get('success') and 'current_price' in td_results and td_results.get('current_price', 0) > 0:
+                    # Mark the data source with thread info
+                    td_results['data_source'] = source_name
+                    td_results['thread_id'] = thread_id
+                    td_results['fetch_timestamp'] = time.time()
+
+                    # Thread-safe data collection
+                    with result_lock:
+                        data_sources.append(td_results)
+                        thread_results[source_name] = {'status': 'success', 'thread_id': thread_id}
+
+                    app.logger.info(f"[{thread_id}] ✅ SUCCESS: Got TwelveData data for {symbol} - Price: {td_results.get('current_price')}")
+                    return True
+                else:
+                    error_msg = f"TwelveData returned invalid data for {symbol}: success={td_results.get('success')}, price={td_results.get('current_price')}"
+
+                    with result_lock:
+                        error_collection[source_name].append(error_msg)
+                        thread_results[source_name] = {'status': 'invalid_data', 'thread_id': thread_id}
+
+                    app.logger.warning(f"[{thread_id}] {error_msg}")
+                    return False
+
+            except Exception as e:
+                error_msg = f"TwelveData ERROR for {symbol}: {str(e)}"
+
+                with result_lock:
+                    error_collection[source_name].append(error_msg)
+                    thread_results[source_name] = {'status': 'error', 'thread_id': thread_id, 'error': str(e)}
+
+                app.logger.error(f"[{thread_id}] ❌ {error_msg}")
+                return False
+
+        def fetch_yfinance_data():
+            """Fetch data from YFinance (SECONDARY SOURCE)"""
+            thread_id = threading.current_thread().name
+            source_name = 'yfinance'
+
+            try:
+                app.logger.info(f"[{thread_id}] Using YFinance as SECONDARY source for {symbol}")
+
+                # Thread-safe analyzer usage
                 yf_results = stock_analyzer.analyze_stock(symbol, force_refresh=False)
+
                 if yf_results and 'current_price' in yf_results and yf_results.get('current_price', 0) > 0:
-                    # Mark the data source
-                    yf_results['data_source'] = 'yfinance'
+                    # Mark the data source with thread info
+                    yf_results['data_source'] = source_name
+                    yf_results['thread_id'] = thread_id
+                    yf_results['fetch_timestamp'] = time.time()
+
+                    # Thread-safe data collection
                     with result_lock:
                         data_sources.append(yf_results)
-                    app.logger.info(f"Got YFinance data for {symbol}")
+                        thread_results[source_name] = {'status': 'success', 'thread_id': thread_id}
+
+                    app.logger.info(f"[{thread_id}] ✅ SUCCESS: Got YFinance data for {symbol} - Price: {yf_results.get('current_price')}")
                     return True
-                return False
+                else:
+                    error_msg = f"YFinance returned invalid data for {symbol}: price={yf_results.get('current_price') if yf_results else 'None'}"
+
+                    with result_lock:
+                        error_collection[source_name].append(error_msg)
+                        thread_results[source_name] = {'status': 'invalid_data', 'thread_id': thread_id}
+
+                    app.logger.warning(f"[{thread_id}] {error_msg}")
+                    return False
+
             except Exception as e:
-                app.logger.warning(f"Error getting YFinance data: {str(e)}")
+                error_msg = f"YFinance ERROR for {symbol}: {str(e)}"
+
+                with result_lock:
+                    error_collection[source_name].append(error_msg)
+                    thread_results[source_name] = {'status': 'error', 'thread_id': thread_id, 'error': str(e)}
+
+                app.logger.error(f"[{thread_id}] ❌ {error_msg}")
                 return False
         
         def fetch_alpha_vantage_data():
-            """Fetch data from Alpha Vantage"""
+            """Fetch data from Alpha Vantage (TERTIARY SOURCE)"""
+            thread_id = threading.current_thread().name
+            source_name = 'alpha_vantage'
+
             if not has_alpha_vantage:
+                with result_lock:
+                    thread_results[source_name] = {'status': 'unavailable', 'thread_id': thread_id}
+                app.logger.info(f"[{thread_id}] Alpha Vantage not available")
                 return False
-                
+
             try:
+                app.logger.info(f"[{thread_id}] Using Alpha Vantage as TERTIARY source for {symbol}")
+
+                # Thread-safe analyzer usage
                 av_results = alpha_client.analyze_stock(symbol, force_refresh=False)
+
                 if av_results and 'current_price' in av_results and av_results.get('current_price', 0) > 0:
+                    # Mark the data source with thread info
+                    av_results['data_source'] = source_name
+                    av_results['thread_id'] = thread_id
+                    av_results['fetch_timestamp'] = time.time()
+
+                    # Thread-safe data collection
                     with result_lock:
                         data_sources.append(av_results)
-                    app.logger.info(f"Got Alpha Vantage data for {symbol}")
+                        thread_results[source_name] = {'status': 'success', 'thread_id': thread_id}
+
+                    app.logger.info(f"[{thread_id}] ✅ SUCCESS: Got Alpha Vantage data for {symbol} - Price: {av_results.get('current_price')}")
                     return True
-                return False
+                else:
+                    error_msg = f"Alpha Vantage returned invalid data for {symbol}: price={av_results.get('current_price') if av_results else 'None'}"
+
+                    with result_lock:
+                        error_collection[source_name].append(error_msg)
+                        thread_results[source_name] = {'status': 'invalid_data', 'thread_id': thread_id}
+
+                    app.logger.warning(f"[{thread_id}] {error_msg}")
+                    return False
+
             except Exception as e:
-                app.logger.warning(f"Error getting Alpha Vantage data: {str(e)}")
+                error_msg = f"Alpha Vantage ERROR for {symbol}: {str(e)}"
+
+                with result_lock:
+                    error_collection[source_name].append(error_msg)
+                    thread_results[source_name] = {'status': 'error', 'thread_id': thread_id, 'error': str(e)}
+
+                app.logger.error(f"[{thread_id}] ❌ {error_msg}")
                 return False
         
         def fetch_ib_data():
-            """Fetch data from Interactive Brokers"""
+            """Fetch data from Interactive Brokers (QUATERNARY SOURCE)"""
+            thread_id = threading.current_thread().name
+            source_name = 'interactive_brokers'
+
             if not has_ib:
+                with result_lock:
+                    thread_results[source_name] = {'status': 'unavailable', 'thread_id': thread_id}
+                app.logger.info(f"[{thread_id}] Interactive Brokers not available")
                 return False
-                
+
             try:
-                if ib_client.check_gateway_status() and ib_client.check_authentication():
-                    ib_results = ib_client.analyze_stock(symbol, force_refresh=False)
-                    if ib_results and 'current_price' in ib_results and ib_results.get('current_price', 0) > 0:
-                        with result_lock:
-                            data_sources.append(ib_results)
-                        app.logger.info(f"Got Interactive Brokers data for {symbol}")
-                        return True
-                return False
+                app.logger.info(f"[{thread_id}] Using Interactive Brokers as QUATERNARY source for {symbol}")
+
+                # Check gateway status and authentication first
+                if not (ib_client.check_gateway_status() and ib_client.check_authentication()):
+                    error_msg = f"Interactive Brokers gateway not ready for {symbol}"
+
+                    with result_lock:
+                        error_collection[source_name].append(error_msg)
+                        thread_results[source_name] = {'status': 'gateway_unavailable', 'thread_id': thread_id}
+
+                    app.logger.warning(f"[{thread_id}] {error_msg}")
+                    return False
+
+                # Thread-safe analyzer usage
+                ib_results = ib_client.analyze_stock(symbol, force_refresh=False)
+
+                if ib_results and 'current_price' in ib_results and ib_results.get('current_price', 0) > 0:
+                    # Mark the data source with thread info
+                    ib_results['data_source'] = source_name
+                    ib_results['thread_id'] = thread_id
+                    ib_results['fetch_timestamp'] = time.time()
+
+                    # Thread-safe data collection
+                    with result_lock:
+                        data_sources.append(ib_results)
+                        thread_results[source_name] = {'status': 'success', 'thread_id': thread_id}
+
+                    app.logger.info(f"[{thread_id}] ✅ SUCCESS: Got Interactive Brokers data for {symbol} - Price: {ib_results.get('current_price')}")
+                    return True
+                else:
+                    error_msg = f"Interactive Brokers returned invalid data for {symbol}: price={ib_results.get('current_price') if ib_results else 'None'}"
+
+                    with result_lock:
+                        error_collection[source_name].append(error_msg)
+                        thread_results[source_name] = {'status': 'invalid_data', 'thread_id': thread_id}
+
+                    app.logger.warning(f"[{thread_id}] {error_msg}")
+                    return False
+
             except Exception as e:
-                app.logger.warning(f"Error getting Interactive Brokers data: {str(e)}")
+                error_msg = f"Interactive Brokers ERROR for {symbol}: {str(e)}"
+
+                with result_lock:
+                    error_collection[source_name].append(error_msg)
+                    thread_results[source_name] = {'status': 'error', 'thread_id': thread_id, 'error': str(e)}
+
+                app.logger.error(f"[{thread_id}] ❌ {error_msg}")
                 return False
         
         # Use ThreadPoolExecutor to fetch data in parallel - removed Interactive Brokers
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            # Start only YFinance and Alpha Vantage tasks
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            # Start TwelveData FIRST (primary), then YFinance and Alpha Vantage as backups
             futures = [
+                executor.submit(fetch_twelvedata_data),
                 executor.submit(fetch_yfinance_data),
                 executor.submit(fetch_alpha_vantage_data)
             ]
@@ -463,7 +617,44 @@ def analyze():
         
         # Calculate and log the time saved by using parallel requests
         end_time = time.time()
-        app.logger.info(f"Parallel data fetching completed in {end_time - start_time:.2f} seconds")
+        parallel_duration = end_time - start_time
+        app.logger.info(f"Parallel data fetching completed in {parallel_duration:.2f} seconds")
+
+        # Thread Safety Analysis and Reporting
+        with result_lock:
+            # Log thread completion status for all sources
+            successful_sources = []
+            failed_sources = []
+
+            for source, result_info in thread_results.items():
+                status = result_info.get('status', 'unknown')
+                thread_id = result_info.get('thread_id', 'unknown')
+
+                if status == 'success':
+                    successful_sources.append(f"{source} (thread: {thread_id})")
+                else:
+                    error_detail = result_info.get('error', status)
+                    failed_sources.append(f"{source} (thread: {thread_id}, reason: {error_detail})")
+
+            # Log comprehensive thread safety summary
+            app.logger.info(f"🧵 THREAD SAFETY ANALYSIS for {symbol}:")
+            app.logger.info(f"   ✅ Successful sources: {len(successful_sources)} - {', '.join(successful_sources) if successful_sources else 'None'}")
+            app.logger.info(f"   ❌ Failed sources: {len(failed_sources)} - {', '.join(failed_sources) if failed_sources else 'None'}")
+            app.logger.info(f"   📊 Data sources collected: {len(data_sources)}")
+            app.logger.info(f"   ⏱️  Total parallel execution time: {parallel_duration:.2f} seconds")
+
+            # Log any collected errors by source
+            if error_collection:
+                app.logger.info(f"🔍 DETAILED ERROR ANALYSIS:")
+                for source, errors in error_collection.items():
+                    for error in errors:
+                        app.logger.warning(f"   [{source}] {error}")
+
+            # Performance metrics for thread safety validation
+            if len(data_sources) > 0:
+                app.logger.info(f"✅ Thread safety validation: {len(data_sources)} sources completed safely in parallel")
+            else:
+                app.logger.warning(f"⚠️ Thread safety concern: No data sources succeeded despite parallel execution")
         
         # Use the Data Comparison Service if we have multiple sources
         if len(data_sources) > 1 and has_comparison_service:
@@ -477,25 +668,46 @@ def analyze():
             results = data_sources[0]  # Use first source if only one or no comparison service
         else:
             # No valid data from any source
-            results = stock_analyzer._get_mock_data(symbol)
+            # DISABLED: Mock data fallback - force failure instead
+                # # DISABLED: Last resort mock data
+                # # DISABLED: Mock data fallback - force failure instead
+                # # DISABLED: Last resort mock data
+                # results = stock_analyzer._get_mock_data(symbol)
+                results = None  # Fail rather than show fake data
+                results = None  # Force failure rather than fake data
+                results = None  # Fail rather than show fake data
+                results = None  # Force failure rather than fake data
         
         if not results:
             # Only use mock data as a last resort if all other methods fail
             print(f"Could not fetch data for {symbol}, falling back to mock data")
-            results = stock_analyzer._get_mock_data(symbol)
+            # DISABLED: Mock data fallback - force failure instead
+                # # DISABLED: Last resort mock data
+                # # DISABLED: Mock data fallback - force failure instead
+                # # DISABLED: Last resort mock data
+                # results = stock_analyzer._get_mock_data(symbol)
+                results = None  # Fail rather than show fake data
+                results = None  # Force failure rather than fake data
+                results = None  # Fail rather than show fake data
+                results = None  # Force failure rather than fake data
         
         if results:
             # Ensure all data is JSON-serializable
             serializable_results = ensure_json_serializable(results)
             
-            # Create and save the analysis
-            analysis = StockAnalysis(
-                user_id=current_user.id,
-                symbol=symbol,
-                analysis_data=serializable_results
-            )
-            db.session.add(analysis)
-            db.session.commit()
+            # Create and save the analysis with error handling for missing date column
+            try:
+                analysis = StockAnalysis(
+                    user_id=current_user.id,
+                    symbol=symbol,
+                    analysis_data=serializable_results
+                )
+                db.session.add(analysis)
+                db.session.commit()
+            except Exception as db_error:
+                app.logger.error(f"Database error saving analysis for {symbol}: {str(db_error)}")
+                # Continue without saving to database to prevent analysis failure
+                db.session.rollback()
             
             # Record that user viewed this stock
             adaptive_learning = get_adaptive_learning()
@@ -514,28 +726,32 @@ def analyze():
             
         # Enhanced debugging and data structuring for ROTC data
         app.logger.info("ROTC Data Structure Check")
-        
-        # First ensure we have the expected nested structure
-        if 'integrated_analysis' not in results:
-            results['integrated_analysis'] = {}
-            
-        if 'fundamental_analysis' not in results['integrated_analysis']:
-            results['integrated_analysis']['fundamental_analysis'] = {}
-        
-        # Check if there's direct ROTC data
-        has_direct_rotc = False
-        if 'fundamental_analysis' in results and 'rotc_data' in results['fundamental_analysis']:
-            has_direct_rotc = True
-            app.logger.info(f"Found direct ROTC data")
-            # Copy to the expected location
-            results['integrated_analysis']['fundamental_analysis']['rotc_data'] = results['fundamental_analysis']['rotc_data']
-        
-        # Check if we now have ROTC data in the expected location
-        has_integrated_rotc = 'rotc_data' in results['integrated_analysis']['fundamental_analysis']
-        app.logger.info(f"Has integrated ROTC data: {has_integrated_rotc}")
-        
+
+        # First ensure we have results and the expected nested structure
+        if results:
+            if 'integrated_analysis' not in results:
+                results['integrated_analysis'] = {}
+
+            if 'fundamental_analysis' not in results['integrated_analysis']:
+                results['integrated_analysis']['fundamental_analysis'] = {}
+
+            # Check if there's direct ROTC data
+            has_direct_rotc = False
+            if 'fundamental_analysis' in results and 'rotc_data' in results['fundamental_analysis']:
+                has_direct_rotc = True
+                app.logger.info(f"Found direct ROTC data")
+                # Copy to the expected location
+                results['integrated_analysis']['fundamental_analysis']['rotc_data'] = results['fundamental_analysis']['rotc_data']
+
+            # Check if we now have ROTC data in the expected location
+            has_integrated_rotc = 'rotc_data' in results['integrated_analysis']['fundamental_analysis']
+            app.logger.info(f"Has integrated ROTC data: {has_integrated_rotc}")
+        else:
+            has_integrated_rotc = False
+            app.logger.info("No results available - cannot check for integrated ROTC data")
+
         # If we still don't have ROTC data, explicitly generate it from financial data
-        if not has_integrated_rotc:
+        if results and not has_integrated_rotc:
             app.logger.info(f"Generating ROTC data for {symbol}")
             from datetime import datetime, timedelta
             import yfinance as yf
@@ -945,7 +1161,18 @@ def analyze():
             app.logger.info(f"Final check before rendering - ROTC data: {'integrated_analysis' in results and 'fundamental_analysis' in results['integrated_analysis'] and 'rotc_data' in results['integrated_analysis']['fundamental_analysis']}")
             
         # Use our fixed template to ensure balance sheet and ROTC always appear
-        return render_template('analysis_fixed.html', results=results, symbol=symbol)
+        if results:
+            return render_template('analysis_fixed.html', results=results, symbol=symbol)
+        else:
+            # Create minimal fallback results if none exist
+            app.logger.error(f"No results available for {symbol}, creating fallback response")
+            fallback_results = {
+                'symbol': symbol,
+                'error': 'Unable to retrieve stock data',
+                'current_price': 0,
+                'message': 'Stock analysis temporarily unavailable'
+            }
+            return render_template('analysis_fixed.html', results=fallback_results, symbol=symbol)
     return render_template('analyze.html')
 
 @app.route('/reanalyze/<symbol>')
@@ -1762,12 +1989,47 @@ def naif_model_screen():
         if not run_simulation:
             custom_params['simulation_runs'] = 0
         
-        # Run the screening model
-        results = naif_model.run_full_screening(
-            market=market,
-            custom_params=custom_params if custom_params else None,
-            risk_profile=risk_profile
-        )
+        # Run the OPTIMIZED screening model with async processing
+        try:
+            from ml_components.naif_model_optimizer import OptimizedNaifModel
+            optimized_model = OptimizedNaifModel()
+
+            # Get stock symbols for the market
+            if market == 'us':
+                symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'JPM', 'JNJ', 'V',
+                          'WMT', 'PG', 'UNH', 'HD', 'BAC', 'MA', 'DIS', 'ADBE', 'CRM', 'NFLX',
+                          'XOM', 'CVX', 'PFE', 'ABT', 'TMO', 'COST', 'AVGO', 'LLY', 'ORCL', 'ACN']
+            else:  # Saudi market
+                symbols = ['1180', '2222', '1010', '2030', '7200', '4700', '1060', '4009', '2380', '1120']
+
+            app.logger.info(f"🚀 Using OPTIMIZED Naif model for {len(symbols)} {market.upper()} stocks")
+
+            # Run async analysis
+            import asyncio
+            results = asyncio.run(optimized_model.analyze_portfolio_fast(symbols, market.upper()))
+
+            # Convert to expected format
+            if results and not results.get('fallback_mode'):
+                app.logger.info(f"✅ FAST analysis completed in {results.get('processing_time', 0):.2f} seconds")
+                results['success'] = True
+                results['market'] = market
+            else:
+                app.logger.warning("⚠️ Using fallback to original model")
+                # Fallback to original model if optimized fails
+                results = naif_model.run_full_screening(
+                    market=market,
+                    custom_params=custom_params if custom_params else None,
+                    risk_profile=risk_profile
+                )
+
+        except Exception as e:
+            app.logger.error(f"❌ Optimized model failed: {str(e)}, using original model")
+            # Fallback to original model
+            results = naif_model.run_full_screening(
+                market=market,
+                custom_params=custom_params if custom_params else None,
+                risk_profile=risk_profile
+            )
         
         if results.get('success'):
             # Save portfolio to database

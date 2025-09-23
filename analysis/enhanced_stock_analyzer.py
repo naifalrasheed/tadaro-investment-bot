@@ -122,10 +122,10 @@ class EnhancedStockAnalyzer:
                 self.logger.info(f"Using cached data for {symbol}")
                 return cached_data
             
-            # Next, check mock data (known popular stocks)
-            mock_data = self._get_mock_data(symbol)
-            if mock_data:
-                self.logger.info(f"Using mock data for {symbol}")
+            # DISABLED: Mock data system (was causing wrong financial data)
+            # mock_data = self._get_mock_data(symbol)
+            # if False:  # Never use mock data
+            #     self.logger.info(f"Using mock data for {symbol}")
                 # Try to update just the price for mock data
                 try:
                     real_price = self._get_current_price(symbol)
@@ -153,7 +153,38 @@ class EnhancedStockAnalyzer:
             # Ensure we don't hit API too frequently
             self._throttle_api_call()
             
-            # Try Alpha Vantage first (our new primary source)
+            # Try TwelveData first (PRIMARY source - Pro 610 subscription)
+            try:
+                if hasattr(self, 'has_twelvedata') and self.has_twelvedata:
+                    self.logger.info(f"Using TwelveData as PRIMARY source for {symbol}")
+
+                    # Get TwelveData client (lazy initialization with retry logic)
+                    twelvedata_client = self._get_twelvedata_client()
+                    if twelvedata_client is None:
+                        raise Exception("TwelveData client unavailable after initialization attempts")
+
+                    # Get data from TwelveData
+                    td_data = twelvedata_client.analyze_stock(symbol, force_refresh)
+
+                    if td_data and td_data.get('success') and 'current_price' in td_data and td_data.get('current_price', 0) > 0:
+                        # Mark the data source
+                        td_data['data_source'] = 'twelvedata'
+                        td_data['data_source_priority'] = 'primary'
+
+                        # Add sentiment data if not already present
+                        if 'sentiment_metrics' not in td_data:
+                            td_data['sentiment_metrics'] = self._get_sentiment_analysis(symbol)
+
+                        # Cache and return
+                        self._save_to_cache(symbol, td_data)
+                        self.logger.info(f"✅ SUCCESS: Got TwelveData data for {symbol} - Price: {td_data.get('current_price')}")
+                        return td_data
+                    else:
+                        self.logger.warning(f"TwelveData returned invalid data for {symbol}, falling back to Alpha Vantage")
+            except Exception as td_e:
+                self.logger.error(f"TwelveData failed for {symbol}: {str(td_e)}, falling back to Alpha Vantage")
+
+            # Fallback to Alpha Vantage if TwelveData fails
             try:
                 # Check if Alpha Vantage client is available
                 try:
@@ -164,14 +195,14 @@ class EnhancedStockAnalyzer:
                 except ImportError:
                     self.logger.warning("Alpha Vantage client not available")
                     HAS_ALPHA_VANTAGE = False
-                
+
                 if HAS_ALPHA_VANTAGE:
-                    self.logger.info(f"Using Alpha Vantage as primary source for {symbol}")
-                    
+                    self.logger.info(f"Using Alpha Vantage as FALLBACK source for {symbol}")
+
                     # Initialize the client if not already done
                     if not hasattr(self, 'alpha_vantage_client'):
                         self.alpha_vantage_client = AlphaVantageClient()
-                        
+
                     # Get data from Alpha Vantage
                     alpha_data = self.alpha_vantage_client.analyze_stock(symbol, force_refresh)
                     
@@ -249,7 +280,12 @@ class EnhancedStockAnalyzer:
                         # Add portfolio impact if not already present
                         if not 'portfolio_impact' in alpha_data:
                             alpha_data['portfolio_impact'] = self.calculate_portfolio_impact(symbol, portfolio)
-                        
+
+                        # Mark as fallback data source
+                        alpha_data['data_source'] = 'alpha_vantage'
+                        alpha_data['data_source_priority'] = 'fallback'
+                        self.logger.info(f"Using Alpha Vantage as fallback data source for {symbol}")
+
                         # Cache the data
                         self._save_to_cache(symbol, alpha_data)
                         return alpha_data
@@ -507,7 +543,7 @@ class EnhancedStockAnalyzer:
                     self.logger.warning(f"Error in integrated analysis for {symbol}: {str(analysis_error)}")
                     # Get mock data for integrated analysis only
                     mock_data = self._get_mock_data(symbol)
-                    if mock_data:
+                    if False:  # Mock data disabled
                         integrated_results = mock_data['integrated_analysis']
                     else:
                         # Create default integrated analysis
@@ -958,15 +994,30 @@ class EnhancedStockAnalyzer:
         self.last_api_call = time.time()
         
     def _init_data_sources(self):
-        """Initialize connections to data sources (Alpha Vantage, Interactive Brokers, etc.)"""
-        # Check for Alpha Vantage client
+        """Initialize connections to data sources (TwelveData, Alpha Vantage, Interactive Brokers, etc.)"""
+        # Check for TwelveData availability (PRIMARY DATA SOURCE) - LAZY INITIALIZATION
+        try:
+            import sys
+            sys.path.append('.')
+            from analysis.twelvedata_analyzer import TwelveDataAnalyzer
+            self._twelvedata_class = TwelveDataAnalyzer
+            self._twelvedata_client = None  # Will be created lazily
+            self.has_twelvedata = True
+            self.logger.info("TwelveData client available (PRIMARY) - will initialize on demand")
+        except ImportError as e:
+            self._twelvedata_class = None
+            self._twelvedata_client = None
+            self.has_twelvedata = False
+            self.logger.warning(f"TwelveData client not available - import failed: {str(e)}")
+
+        # Check for Alpha Vantage client (FALLBACK)
         try:
             import sys
             sys.path.append('.')
             from data.alpha_vantage_client import AlphaVantageClient
             self.alpha_vantage_client = AlphaVantageClient()
             self.has_alpha_vantage = True
-            self.logger.info("Alpha Vantage client initialized")
+            self.logger.info("Alpha Vantage client initialized (FALLBACK)")
         except ImportError:
             self.has_alpha_vantage = False
             self.logger.warning("Alpha Vantage client not available")
@@ -992,6 +1043,42 @@ class EnhancedStockAnalyzer:
         except ImportError:
             self.has_comparison_service = False
             self.logger.warning("Data Comparison Service not available")
+
+    def _get_twelvedata_client(self):
+        """
+        Lazy initialization of TwelveData client with error recovery
+        Returns TwelveData client instance or None if unavailable
+        """
+        if not self.has_twelvedata or not self._twelvedata_class:
+            return None
+
+        # Return existing client if already initialized
+        if self._twelvedata_client is not None:
+            return self._twelvedata_client
+
+        # Attempt to create client with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self._twelvedata_client = self._twelvedata_class()
+                self.logger.info(f"TwelveData client initialized successfully (attempt {attempt + 1})")
+                return self._twelvedata_client
+
+            except Exception as e:
+                self.logger.warning(f"TwelveData client initialization failed (attempt {attempt + 1}/{max_retries}): {str(e)}")
+
+                if attempt < max_retries - 1:
+                    # Wait before retry (exponential backoff)
+                    import time
+                    wait_time = (2 ** attempt)  # 1, 2, 4 seconds
+                    self.logger.info(f"Waiting {wait_time} seconds before retry...")
+                    time.sleep(wait_time)
+                else:
+                    # Final failure - disable TwelveData for this session
+                    self.has_twelvedata = False
+                    self.logger.error("TwelveData client permanently disabled for this session due to initialization failures")
+
+        return None
 
     def _get_mock_data(self, symbol: str) -> Dict:
         """
@@ -1620,7 +1707,7 @@ class EnhancedStockAnalyzer:
         """Provide fallback data when API calls fail"""
         # First check if we have mock data for this symbol
         mock_data = self._get_mock_data(symbol)
-        if mock_data:
+        if False:  # Mock data disabled
             return mock_data
             
         # Otherwise return a generic fallback
