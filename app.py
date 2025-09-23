@@ -102,6 +102,16 @@ profile_analyzer = ProfileAnalyzer()
 naif_model = NaifAlRasheedModel()
 claude_handler = ClaudeHandler()
 
+# CRITICAL: Initialize TwelveData as primary data source
+try:
+    twelvedata_analyzer = TwelveDataAnalyzer()
+    logger.info("TwelveData Pro 610 API initialized successfully")
+    logger.info("TwelveData circuit breaker and connection pooling active")
+except Exception as e:
+    logger.error(f"CRITICAL: TwelveData initialization failed: {str(e)}")
+    logger.error("Falling back to Alpha Vantage - stock data may be limited")
+    twelvedata_analyzer = None
+
 # Create a chat interface without user_id (will be set per-request)
 chat_interface = None
 
@@ -407,8 +417,10 @@ def analyze():
             try:
                 app.logger.info(f"[{thread_id}] Using TwelveData as PRIMARY source for {symbol}")
 
-                # Thread-safe analyzer creation (lazy initialization handles this)
-                twelvedata_analyzer = TwelveDataAnalyzer()
+                # Use global TwelveData analyzer (initialized at startup)
+                if twelvedata_analyzer is None:
+                    raise Exception("TwelveData analyzer not initialized - check TWELVEDATA_API_KEY environment variable")
+
                 td_results = twelvedata_analyzer.analyze_stock(symbol, force_refresh=False)
 
                 if td_results and td_results.get('success') and 'current_price' in td_results and td_results.get('current_price', 0) > 0:
