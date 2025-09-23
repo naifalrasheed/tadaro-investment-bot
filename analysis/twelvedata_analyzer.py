@@ -65,11 +65,13 @@ class TwelveDataAnalyzer:
         # CONNECTION POOLING: Advanced HTTP session with connection pooling
         self.session = self._create_optimized_session()
         self.session.headers.update({
-            'Authorization': f'apikey {self.api_key}',
             'User-Agent': 'Tadaro Investment Bot 1.0',
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         })
+
+        # NOTE: TwelveData uses query parameter authentication, not headers
+        # API key will be added as 'apikey' parameter in _make_request method
 
         # Optimized rate limiting - Pro 610 plan: FULL 610 requests/minute utilization
         self.last_request = 0
@@ -558,6 +560,9 @@ class TwelveDataAnalyzer:
 
         # Optimized Pro 610 rate limiting with burst handling
         self._apply_rate_limiting(current_time)
+
+        # CRITICAL: Add API key as query parameter (TwelveData requirement)
+        params['apikey'] = self.api_key
 
         # Always request JSON format
         params['format'] = 'json'
