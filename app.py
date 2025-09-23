@@ -103,10 +103,21 @@ naif_model = NaifAlRasheedModel()
 claude_handler = ClaudeHandler()
 
 # CRITICAL: Initialize TwelveData as primary data source
+# Emergency hotfix: Set API key if not in environment
+if not os.environ.get('TWELVEDATA_API_KEY'):
+    logger.warning("TWELVEDATA_API_KEY not found in environment - using Pro 610 fallback key")
+    os.environ['TWELVEDATA_API_KEY'] = '4420a6f49fbf468c843c102571ec7329'
+
 try:
     twelvedata_analyzer = TwelveDataAnalyzer()
     logger.info("TwelveData Pro 610 API initialized successfully")
     logger.info("TwelveData circuit breaker and connection pooling active")
+    # Test API key validity
+    test_result = twelvedata_analyzer.get_quote('MSFT')
+    if test_result and test_result.get('success'):
+        logger.info("TwelveData API key validation successful")
+    else:
+        logger.warning("TwelveData API key validation failed - check subscription status")
 except Exception as e:
     logger.error(f"CRITICAL: TwelveData initialization failed: {str(e)}")
     logger.error("Falling back to Alpha Vantage - stock data may be limited")
