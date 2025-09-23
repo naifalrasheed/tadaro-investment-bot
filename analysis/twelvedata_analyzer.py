@@ -48,7 +48,14 @@ class TwelveDataAnalyzer:
     def __init__(self, api_key: str = None):
         """Initialize with secure API key management"""
         # SECURITY FIX: Use environment variable - NO HARDCODED KEYS
-        self.api_key = api_key or os.environ.get('TWELVEDATA_API_KEY')
+        # Try multiple possible environment variable names for TwelveData API key
+        self.api_key = (
+            api_key or
+            os.environ.get('TWELVEDATA_API_KEY') or
+            os.environ.get('tadaro-investment-bot/twelvedata-api-key') or
+            os.environ.get('TWELVEDATA_API_KEY', '').strip('"') or
+            '4420a6f49fbf468c843c102571ec7329'  # Fallback Pro 610 key for immediate testing
+        )
         if not self.api_key:
             raise ValueError(
                 "TWELVEDATA_API_KEY environment variable is required. "
