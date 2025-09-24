@@ -30,6 +30,46 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+def get_twelvedata_api_key():
+    """Get TwelveData API key from environment or AWS Secrets Manager"""
+
+    # First try environment variable
+    api_key = os.environ.get('TWELVEDATA_API_KEY')
+    if api_key and api_key.strip():
+        logger.debug("API key loaded from environment variable")
+        return api_key.strip()
+
+    # Try AWS Secrets Manager
+    try:
+        import boto3
+        import json
+
+        client = boto3.client('secretsmanager', region_name='us-east-1')
+        response = client.get_secret_value(SecretId='tadaro-investment-bot/twelvedata-api-key')
+
+        # Handle both string and JSON secret formats
+        secret_string = response['SecretString']
+        try:
+            # Try to parse as JSON first
+            secret = json.loads(secret_string)
+            # Look for common key names
+            api_key = secret.get('api_key') or secret.get('TWELVEDATA_API_KEY') or secret.get('key')
+            if api_key:
+                logger.info("API key loaded from AWS Secrets Manager (JSON format)")
+                return api_key
+        except json.JSONDecodeError:
+            # Treat as plain string
+            if secret_string and secret_string.strip():
+                logger.info("API key loaded from AWS Secrets Manager (string format)")
+                return secret_string.strip()
+
+    except ImportError:
+        logger.debug("boto3 not available - skipping Secrets Manager")
+    except Exception as e:
+        logger.warning(f"Failed to get API key from Secrets Manager: {e}")
+
+    return None
+
 class CircuitState(Enum):
     """Circuit breaker states"""
     CLOSED = "closed"
@@ -57,15 +97,12 @@ class TwelveDataAnalyzer:
     def __init__(self, api_key: str = None):
         """Initialize with secure API key management - supports environment variables and AWS Secrets Manager"""
         # SECURITY: Support both environment variables and AWS Secrets Manager
-        self.api_key = api_key or self._get_api_key_secure()
+        self.api_key = api_key or get_twelvedata_api_key()
 
         if not self.api_key:
             raise ValueError(
-                "TWELVEDATA_API_KEY not found. Configure it either as:\n"
-                "1. Environment variable: TWELVEDATA_API_KEY=your_key\n"
-                "2. AWS Secrets Manager reference in AWS App Runner\n"
-                "3. Direct AWS Secrets Manager: tadaro-investment-bot/twelvedata-api-key\n"
-                "No fallback or default keys are provided for security."
+                "TwelveData API key not found in environment or Secrets Manager.\n"
+                "Configure TWELVEDATA_API_KEY environment variable or AWS Secrets Manager secret: tadaro-investment-bot/twelvedata-api-key"
             )
 
         # SECURITY: Never log full API key - only show it's configured
@@ -76,54 +113,6 @@ class TwelveDataAnalyzer:
         self._init_connection_pooling()
         self._init_rate_limiting()
         self._init_circuit_breaker()
-
-    def _get_api_key_secure(self) -> Optional[str]:
-        """
-        Securely get API key from multiple sources:
-        1. Environment variable (direct or AWS App Runner reference)
-        2. AWS Secrets Manager (direct access)
-        """
-        # Try environment variable first (includes AWS App Runner references)
-        api_key = os.environ.get('TWELVEDATA_API_KEY')
-        if api_key and api_key.strip():
-            logger.debug("API key loaded from environment variable")
-            return api_key.strip()
-
-        # Try AWS Secrets Manager directly (fallback for development)
-        try:
-            import boto3
-            from botocore.exceptions import ClientError, NoCredentialsError
-
-            logger.debug("Attempting to load API key from AWS Secrets Manager")
-
-            # Try to get from AWS Secrets Manager
-            secret_name = "tadaro-investment-bot/twelvedata-api-key"
-            region_name = "us-east-1"
-
-            session = boto3.session.Session()
-            client = session.client(
-                service_name='secretsmanager',
-                region_name=region_name
-            )
-
-            secret_value = client.get_secret_value(SecretId=secret_name)
-            api_key = secret_value['SecretString']
-
-            if api_key and api_key.strip():
-                logger.info("API key loaded from AWS Secrets Manager")
-                return api_key.strip()
-
-        except ImportError:
-            logger.debug("boto3 not available - skipping direct Secrets Manager access")
-        except NoCredentialsError:
-            logger.debug("AWS credentials not found - skipping direct Secrets Manager access")
-        except ClientError as e:
-            logger.debug(f"AWS Secrets Manager access failed: {e}")
-        except Exception as e:
-            logger.debug(f"Unexpected error accessing AWS Secrets Manager: {e}")
-
-        logger.warning("API key not found in any secure source")
-        return None
 
     def _init_connection_pooling(self):
         """Initialize HTTP session with connection pooling"""
