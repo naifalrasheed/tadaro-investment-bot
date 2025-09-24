@@ -1419,14 +1419,14 @@ def reanalyze(symbol):
         end_time = time.time()
         app.logger.info(f"Parallel data fetching completed in {end_time - start_time:.2f} seconds")
         
-        # If we have the comparison service and multiple sources with data, reconcile them
+        # If we have the comparison service and multiple sources with data, select best source
         if 'DataComparisonService' in source_data and len(source_data) > 1:
             # Extract actual data objects from the source_data dict, excluding the comparison service
-            data_to_compare = {name: data for name, data in source_data.items() if name != 'DataComparisonService'}
-            
-            # Use the comparison service to reconcile data from multiple sources
-            results = comparison_service.reconcile_data(data_to_compare)
-            app.logger.info(f"Using reconciled data from {len(data_to_compare)} sources for {symbol}")
+            data_to_compare = [data for name, data in source_data.items() if name != 'DataComparisonService']
+
+            # Use the comparison service to select best single data source (NO AVERAGING)
+            results = comparison_service.select_best_source(data_to_compare)
+            app.logger.info(f"Selected single best data source from {len(data_to_compare)} available sources for {symbol} - NO data mixing/averaging")
     
     # Use enhanced analysis if available
     if not results:
