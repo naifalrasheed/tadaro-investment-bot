@@ -103,3 +103,47 @@ dmypy.json
 AWS*Access*Key*
 *.pem
 *.key
+
+# Environment files (additional patterns)
+*.env
+.env.*
+environment.local
+config.local.*
+
+# API keys and secrets
+*api*key*
+*secret*key*
+*token*
+*.secrets
+
+# Backup files that may contain secrets
+*_backup_*
+*_old.py
+*_fixed.py
+*_secure.py
+
+# Documentation that may contain sensitive info
+TWELVEDATA_IMPLEMENTATION_MEMORY.md
+TWELVEDATA_FIXES_DEPLOYED.md
+EMERGENCY_FIX_DOCUMENTATION.md
+ACTIONS_TO_FIX.md
+*API_INTEGRATION_CODE.py
+*APP_INITIALIZATION.py
+
+# AWS CLI and deployment files
+*.bat
+deploy_*.py
+fix_*.bat
+update_*.bat
+check_*.bat
+
+# Screenshots that may contain sensitive info
+*.png
+*.jpg
+*.jpeg
+Application*.json
+
+# Temporary test files
+test_*simple*.py
+CURRENT_*.py
+TWELVEDATA_*.py

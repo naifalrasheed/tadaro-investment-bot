@@ -10,14 +10,15 @@
             <div class="card-header">
                 <h4>Company Overview</h4>
                 {% if results.data_source is defined %}
-                <span class="badge {% if results.data_source == 'alpha_vantage' %}bg-success{% elif results.data_source == 'interactive_brokers' %}bg-primary{% elif results.data_source == 'yfinance' %}bg-info{% elif results.data_source == 'manual_data' %}bg-warning{% else %}bg-secondary{% endif %} float-end">
-                    Data Source: {{ results.data_source|replace('_', ' ')|title }}
+                <span class="badge {% if results.data_source == 'twelvedata' %}bg-primary{% elif results.data_source == 'alpha_vantage' %}bg-success{% elif results.data_source == 'interactive_brokers' %}bg-info{% elif results.data_source == 'yfinance' %}bg-warning{% elif results.data_source == 'manual_data' %}bg-secondary{% else %}bg-dark{% endif %} float-end">
+                    <i class="fa fa-database"></i> {{ results.data_source|replace('_', ' ')|title }}
+                    {% if results.data_source == 'twelvedata' %}(Real-time){% elif results.data_source == 'alpha_vantage' %}(15min delay){% elif results.data_source == 'yfinance' %}(Delayed){% endif %}
                 </span>
                 {% endif %}
-                {% if results.data_reconciliation is defined %}
-                <span class="badge bg-info float-end me-2" data-bs-toggle="tooltip" data-bs-placement="top" 
-                      title="Data reconciled from multiple sources: {{ results.data_reconciliation.sources|join(', ') }}">
-                    <i class="fa fa-check-circle"></i> Reconciled Data
+                {% if results.data_selection is defined %}
+                <span class="badge bg-info float-end me-2" data-bs-toggle="tooltip" data-bs-placement="top"
+                      title="Single source selected from {{ results.data_selection.available_sources|length }} available sources">
+                    <i class="fa fa-check-circle"></i> Priority Selection
                 </span>
                 {% endif %}
             </div>
@@ -101,13 +102,14 @@
                     </div>
                 </div>
                 
-                {% if results.data_reconciliation is defined %}
+                {% if results.data_selection is defined %}
                 <div class="mt-3 small text-muted">
-                    <p><i class="fa fa-info-circle"></i> Data combined from multiple sources for accuracy:</p>
+                    <p><i class="fa fa-info-circle"></i> Single data source selected for accuracy:</p>
                     <ul class="mb-0">
-                        <li>Primary source: {{ results.data_reconciliation.primary_source|replace('_', ' ')|title }}</li>
-                        <li>Sources used: {{ results.data_reconciliation.sources|join(', ')|replace('_', ' ')|title }}</li>
-                        <li>Reconciled fields: {{ results.data_reconciliation.conflict_fields|join(', ')|replace('_', ' ')|replace('.', ' → ')|title }}</li>
+                        <li>Selected source: {{ results.data_selection.selected_source|replace('_', ' ')|title }}</li>
+                        <li>Available sources: {{ results.data_selection.available_sources|join(', ')|replace('_', ' ')|title }}</li>
+                        <li>Selection reason: {{ results.data_selection.selection_reason|replace('_', ' ')|title }}</li>
+                        <li>Last updated: {{ results.data_selection.selected_at }}</li>
                     </ul>
                 </div>
                 {% endif %}

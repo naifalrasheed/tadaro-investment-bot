@@ -103,24 +103,40 @@ naif_model = NaifAlRasheedModel()
 claude_handler = ClaudeHandler()
 
 # CRITICAL: Initialize TwelveData as primary data source
-# Emergency hotfix: Set API key if not in environment
-if not os.environ.get('TWELVEDATA_API_KEY'):
-    logger.warning("TWELVEDATA_API_KEY not found in environment - using Pro 610 fallback key")
-    os.environ['TWELVEDATA_API_KEY'] = '4420a6f49fbf468c843c102571ec7329'
+# SECURITY: No hardcoded API keys - AWS App Runner environment variable required
+
+# Fix AWS App Runner permission issues
+os.environ['HOME'] = '/tmp'
+os.environ['TMPDIR'] = '/tmp'
+
+# For yfinance cache issues
+try:
+    import yfinance as yf
+    yf.set_tz_cache_location('/tmp')
+except ImportError:
+    pass  # yfinance not installed
 
 try:
+    # Initialize TwelveData with strict environment variable requirement
     twelvedata_analyzer = TwelveDataAnalyzer()
     logger.info("TwelveData Pro 610 API initialized successfully")
     logger.info("TwelveData circuit breaker and connection pooling active")
-    # Test API key validity
+
+    # Test API key validity with a simple call
     test_result = twelvedata_analyzer.get_quote('MSFT')
     if test_result and test_result.get('success'):
         logger.info("TwelveData API key validation successful")
     else:
         logger.warning("TwelveData API key validation failed - check subscription status")
+
+except ValueError as ve:
+    logger.error(f"CRITICAL: TwelveData configuration error: {str(ve)}")
+    logger.error("TWELVEDATA_API_KEY environment variable must be set in AWS App Runner")
+    twelvedata_analyzer = None
+
 except Exception as e:
     logger.error(f"CRITICAL: TwelveData initialization failed: {str(e)}")
-    logger.error("Falling back to Alpha Vantage - stock data may be limited")
+    logger.error("Check API key and subscription status")
     twelvedata_analyzer = None
 
 # Create a chat interface without user_id (will be set per-request)
@@ -403,7 +419,7 @@ def analyze():
             from data.data_comparison_service import DataComparisonService
             has_comparison_service = True
             data_comparison = DataComparisonService()
-            app.logger.info("Using Data Comparison Service")
+            app.logger.info("Using Data Source Priority Service - NO data mixing/averaging")
         except ImportError:
             has_comparison_service = False
             app.logger.warning("Data Comparison Service not available")
@@ -679,13 +695,14 @@ def analyze():
             else:
                 app.logger.warning(f"⚠️ Thread safety concern: No data sources succeeded despite parallel execution")
         
-        # Use the Data Comparison Service if we have multiple sources
-        if len(data_sources) > 1 and has_comparison_service:
+        # Use priority-based data source selection (NO AVERAGING/MIXING)
+        if data_sources and has_comparison_service:
             try:
-                results = data_comparison.compare_and_select(data_sources)
-                app.logger.info(f"Using reconciled data from {len(data_sources)} sources for {symbol}")
+                results = data_comparison.select_best_source(data_sources)
+                selected_source = results.get('data_source', 'unknown')
+                app.logger.info(f"Selected single data source: {selected_source} from {len(data_sources)} available sources for {symbol}")
             except Exception as e:
-                app.logger.warning(f"Error using Data Comparison Service: {str(e)}")
+                app.logger.warning(f"Error using Data Source Priority Service: {str(e)}")
                 results = data_sources[0]  # Fallback to first source
         elif data_sources:
             results = data_sources[0]  # Use first source if only one or no comparison service
