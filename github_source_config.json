@@ -1,0 +1,22 @@
+{
+  "CodeRepository": {
+    "RepositoryUrl": "https://github.com/naifalrasheed/tadaro-investment-bot",
+    "SourceCodeVersion": {
+      "Type": "BRANCH",
+      "Value": "main"
+    },
+    "CodeConfiguration": {
+      "ConfigurationSource": "REPOSITORY",
+      "CodeConfigurationValues": {
+        "Runtime": "PYTHON_311",
+        "BuildCommand": "pip3 install --upgrade pip && pip3 install -r requirements.txt",
+        "StartCommand": "python3 -m gunicorn app:app --bind 0.0.0.0:8000 --workers 2 --timeout 300 --worker-class sync --log-level info --access-logfile - --error-logfile -",
+        "RuntimeEnvironmentVariables": {
+          "ENVIRONMENT": "production",
+          "FLASK_ENV": "production"
+        }
+      }
+    }
+  },
+  "AutoDeploymentsEnabled": true
+}

@@ -3,38 +3,51 @@ runtime: python311
 build:
   commands:
     build:
+      - echo "Installing Python dependencies for GitHub source deployment"
       - pip3 install --upgrade pip
       - pip3 install -r requirements.txt
+      - echo "Build completed successfully"
 run:
   runtime-version: "3.11"
   command: python3 -m gunicorn app:app --bind 0.0.0.0:8000 --workers 2 --timeout 300 --worker-class sync --log-level info --access-logfile - --error-logfile -
   network:
     port: 8000
     env: PORT
-  instance_role_arn: arn:aws:iam::593793060843:role/TadaroAppRunnerInstanceRole
   env:
-    # Non-sensitive environment variables (safe to put here)
+    # Application Configuration
     - name: FLASK_APP
       value: app.py
     - name: ENVIRONMENT
       value: "production"
+    - name: FLASK_ENV
+      value: "production"
     - name: LOG_LEVEL
       value: "INFO"
+    - name: PYTHONPATH
+      value: "/opt/render/project/src"
+
     # Parameters from Systems Manager Parameter Store
     - name: GOOGLE_CLIENT_ID
       value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/google-client-id"
-    - name: FLASK_ENV
-      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/flask-env"
     - name: PORT
       value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/port"
-    # Sensitive data from AWS Secrets Manager
-    - name: CLAUDE_API_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/claude-api-key"
-    - name: DATABASE_URL
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/database-url"
-    - name: GOOGLE_CLIENT_SECRET
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/google-client-secret"
-    - name: SECRET_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key"
+
+    # API Keys from AWS Secrets Manager - Using exact ARNs with suffixes
     - name: TWELVEDATA_API_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/twelvedata-api-key"
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/twelvedata-api-key-JHgB8K"
+    - name: ALPHA_VANTAGE_API_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/ALPHA_VANTAGE_API_KEY-cQyuOF"
+    - name: CLAUDE_API_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/claude-api-key-lBp9wT"
+
+    # Database and Security
+    - name: DATABASE_URL
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/database-url-KZyTpF"
+    - name: SECRET_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key-mE3KzP"
+    - name: FLASK_SECRET_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key-mE3KzP"
+
+    # Google OAuth
+    - name: GOOGLE_CLIENT_SECRET
+      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/google-client-secret-pQr5sL"
