@@ -1,0 +1,313 @@
+<implementation_guide>
+Twelve Data — API Pro Implementation Guide (Python + Claude Code)
+This guide distills everything you can use on the Twelve Data API with a Pro subscription and shows exactly how to implement it in Python (as you’d run inside Claude Code). Citations next to key facts point back to the uploaded docs.
+
+1) Authentication & Project Setup
+API base & auth
+* REST base URL: https://api.twelvedata.com
+* WebSocket base: wss://ws.twelvedata.com 
+* Auth (recommended): HTTP header Authorization: apikey YOUR_KEY
+Alternative: query param ?apikey=YOUR_KEY (works but header is cleaner). 
+* Demo key exists (apikey=demo) for quick tests; use your personal key for full access. 
+Python environment
+* You can use either:
+o Official SDK: twelvedata (handy for quick calls).
+o requests: thin and explicit; good for all endpoints and batch jobs.
+pip install twelvedata requests websockets pandas
+Security: Never hardcode keys. Use environment variables in Claude Code:
+import os
+API_KEY = os.environ["TWELVEDATA_API_KEY"]
+HEADERS = {"Authorization": f"apikey {API_KEY}"}
+BASE = "https://api.twelvedata.com"
+
+2) What’s included on Pro?
+You can rely on the following with a Pro plan (items marked ?? indicate “Pro and above,” or “starts at Pro”). Higher-tier-only endpoints are called out as Not in Pro.
+Core Market Data
+* Time Series /time_series — historical OHLC(V) by interval.
+* Time Series Cross /time_series/cross — synthetic cross series (e.g., AAPL priced in INR; crypto/FX crosses).
+* Quote /quote — latest OHLC, volume, changes; supports intraday intervals.
+* Latest Price /price — a single latest price.
+* End of Day /eod — daily close snapshot.
+* ?? Pre/Post market (prepost=true) where applicable (US equities, 1–30 min bars). 
+Discovery & Reference
+* Symbol Search /symbol_search — fuzzy search over tickers/ISIN/FIGI.
+* Exchanges /exchanges — catalog of exchanges.
+* Countries /countries — ISO, currency, capital.
+* Instrument Types /instrument_type — list of instrument classes.
+* Forex Pairs /forex_pairs — FX universe.
+* Cryptocurrencies /cryptocurrencies — crypto universe.
+* ETFs /etfs, Funds /funds, Commodities /commodities, Bonds /bonds.
+* Earliest Timestamp /earliest_timestamp — first available bar at an interval. 
+Market Intelligence
+* ?? Market Movers /market_movers/{market} — top gainers/losers for stocks/ETFs/mutual funds/FX/crypto. Available starting with the Pro plan. 
+Operational / Scaling
+* Batch /batch — send many requests at once (JSON POST). 
+* API Usage /api_usage — check consumption/limits programmatically. 
+Streaming (WebSocket)
+* ?? Full WebSocket access on Pro+; Basic/Grow restricted to trial testing. Pro allows streaming any instrument. 
+* Real-time price route: wss://ws.twelvedata.com/v1/quotes/price (auth via query or header). 
+Not in Pro (for awareness)
+* Cross Listings /cross_listings — starts at Grow (not Pro). 
+* Exchange Schedule /exchange_schedule — Ultra. 
+* Sanctions /sanctions/{source} — Ultra. 
+
+3) Implementation Details & Code (Python)
+Below, for each major function, you’ll get: purpose, key params, response shape, and robust Python examples with guidance for Claude Code.
+A) Time Series — /time_series
+Use: backtests, indicators, charting, model features.
+Key params:
+* symbol (or figi/isin/cusip)
+* interval in {1min,5min,15min,30min,45min,1h,2h,4h,5h,1day,1week,1month}
+* outputsize (1–5000), start_date/end_date, order, timezone, adjust
+* ?? prepost: include pre/post data on supported US equities intraday. 
+Response: { "meta": {...}, "values": [ { "datetime","open","high","low","close","volume" }... ], "status":"ok" } 
+Example (requests):
+import os, requests, pandas as pd
+BASE = "https://api.twelvedata.com"
+headers = {"Authorization": f"apikey {os.environ['TWELVEDATA_API_KEY']}"}
+
+params = {
+    "symbol": "AAPL",
+    "interval": "1min",
+    "outputsize": 5000,
+    "prepost": "true",     # Pro+: pre/post supported for US equities intraday
+    "adjust": "splits",    # or 'all','dividends','none'
+}
+r = requests.get(f"{BASE}/time_series", headers=headers, params=params, timeout=20)
+r.raise_for_status()
+data = r.json()
+df = pd.DataFrame(data["values"]).assign(
+    datetime=lambda d: pd.to_datetime(d["datetime"])
+).sort_values("datetime")
+Errors & retries:
+* 400 invalid params (e.g., bad interval) — validate intervals.
+* 429 rate limit — backoff + retry. 
+
+B) Time Series Cross — /time_series/cross
+Use: on-the-fly crosses (e.g., JPY vs BTC at 1min; AAPL priced in another currency).
+Key params: base, quote, interval, outputsize, start_date, end_date, adjust, timezone.
+Response: meta (base/quote instruments) + values (OHLC). 
+Example:
+params = {"base":"JPY", "quote":"BTC", "interval":"1min", "outputsize":300}
+r = requests.get(f"{BASE}/time_series/cross", headers=headers, params=params, timeout=20)
+r.raise_for_status()
+cross = r.json()
+
+C) Quote — /quote
+Use: near-real-time snapshot: OHLC, volume, change %, rolling changes, 52-week range.
+Key params: symbol (or figi/isin/cusip), interval, prepost (?? Pro+ intraday), timezone. 
+Example:
+params = {"symbol":"AAPL", "interval":"1min", "prepost":"true"}
+r = requests.get(f"{BASE}/quote", headers=headers, params=params, timeout=10)
+r.raise_for_status()
+quote = r.json()
+last = float(quote["close"])
+
+D) Latest Price — /price
+Use: single number “what’s the price now?” for UIs & alerts.
+Response: { "price": "123.45" } 
+Example:
+r = requests.get(f"{BASE}/price", headers=headers, params={"symbol":"AAPL"}, timeout=5)
+price = float(r.json()["price"])
+
+E) End of Day Price — /eod
+Use: closing price snapshots (historical or specific date).
+Response: {symbol, exchange, mic_code, currency, datetime, close} 
+Pro note: prepost exists for US equities but generally EOD is regular-session close. 
+Example:
+r = requests.get(f"{BASE}/eod", headers=headers, params={"symbol":"AAPL"}, timeout=10)
+eod = r.json()
+close = float(eod["close"])
+
+F) Symbol Search — /symbol_search
+Use: typeahead, user lookup by ticker/ISIN/FIGI.
+Params: symbol (string to match), outputsize.
+Example:
+r = requests.get(f"{BASE}/symbol_search", headers=headers, params={"symbol":"AAPL"}, timeout=10)
+matches = r.json().get("data", [])
+
+G) Exchanges / Countries / Instrument Types
+* /exchanges — exchange catalog (code, country, timezone).
+* /countries — ISO2/3, official name, capital, currency.
+* /instrument_type — list of instrument classes.
+Examples:
+ex = requests.get(f"{BASE}/exchanges", headers=headers).json()   # list of exchanges
+ct = requests.get(f"{BASE}/countries", headers=headers).json()   # countries
+it = requests.get(f"{BASE}/instrument_type", headers=headers).json()["result"]  # types
+
+H) Universe Lists — FX, Crypto, ETFs, Funds, Commodities, Bonds
+Endpoints:
+* /forex_pairs, /cryptocurrencies, /etfs, /funds, /commodities, /bonds
+Use: build dropdowns, validate symbols, run nightly refreshers.
+Examples:
+fx = requests.get(f"{BASE}/forex_pairs", headers=headers).json()
+cc = requests.get(f"{BASE}/cryptocurrencies", headers=headers).json()
+etfs = requests.get(f"{BASE}/etfs", headers=headers).json()
+funds = requests.get(f"{BASE}/funds", headers=headers).json()
+cmdy = requests.get(f"{BASE}/commodities", headers=headers).json()
+bnds = requests.get(f"{BASE}/bonds", headers=headers).json()
+
+I) Earliest Timestamp — /earliest_timestamp
+Use: decide maximum historical window for a symbol+interval before querying.
+Example:
+r = requests.get(f"{BASE}/earliest_timestamp", headers=headers,
+                 params={"symbol":"AAPL","interval":"1day"}, timeout=8)
+first = r.json()["datetime"]
+
+J) Market State — /market_state
+Use: is exchange open? time to close/open.
+Example:
+ms = requests.get(f"{BASE}/market_state", headers=headers, timeout=8).json()
+open_nyse = next(x for x in ms if x["code"]=="XNYS")["is_market_open"]
+
+K) ?? Market Movers — /market_movers/{market} (Pro+)
+Use: daily gainers/losers for stocks|etf|mutual_funds|forex|crypto.
+Example:
+params = {"direction":"gainers", "outputsize":30, "country":"USA"}
+mm = requests.get(f"{BASE}/market_movers/stocks", headers=headers, params=params, timeout=10).json()
+Pro availability: “This API endpoint is available starting with the Pro plan.” 
+
+L) Batch Requests — /batch
+Use: fire many REST calls in one POST; each request’s result keyed by your ID.
+Body: JSON mapping request_id ? {"url": "/endpoint?..."}
+Example (Python):
+import json, requests, os
+headers = {
+  "Authorization": f"apikey {os.environ['TWELVEDATA_API_KEY']}",
+  "Content-Type": "application/json"
+}
+body = {
+  "ts": {"url": "/time_series?symbol=AAPL&interval=1min&outputsize=2"},
+  "fx": {"url": "/exchange_rate?symbol=USD/JPY"},
+  "cc": {"url": "/currency_conversion?symbol=USD/JPY&amount=122"}
+}
+r = requests.post(f"{BASE}/batch", headers=headers, data=json.dumps(body), timeout=30)
+r.raise_for_status()
+batch = r.json()["data"]
+ts = batch["ts"]["response"]  # normal endpoint payload inside
+Credits: credits consumed as sum of contained requests; concurrency limited by plan. Errors are per-request. 
+
+M) API Usage — /api_usage
+Use: monitor your request counts, plan limit, reset windows; build safety throttles.
+Response: { timestamp, current_usage, plan_limit }
+Example:
+usage = requests.get(f"{BASE}/api_usage", headers=headers, timeout=5).json()
+
+N) WebSocket — Real-time Streaming (Pro+ full)
+Access: Pro and above have full WS access; Basic/Grow limited tests (one connection, up to 8 trial symbols). 
+Connect & authorize:
+* Query: wss://ws.twelvedata.com/v1/quotes/price?apikey=YOUR_KEY
+* Or header: X-TD-APIKEY: YOUR_KEY 
+Events: status and price, fields include symbol, type, timestamp, price, day_volume. Heartbeat recommended. Reset/unsubscribe supported. 
+Python example (websockets):
+import os, asyncio, json, websockets
+
+API_KEY = os.environ["TWELVEDATA_API_KEY"]
+WS = f"wss://ws.twelvedata.com/v1/quotes/price?apikey={API_KEY}"
+
+async def stream():
+    async with websockets.connect(WS, ping_interval=None) as ws:
+        # subscribe to multiple symbols
+        sub = {"action":"subscribe","params":{"symbols":"AAPL,MSFT,EUR/USD,BTC/USD"}}
+        await ws.send(json.dumps(sub))
+        # send heartbeats every ~10s
+        async def heartbeats():
+            while True:
+                await asyncio.sleep(10)
+                await ws.send(json.dumps({"action":"heartbeat"}))
+        asyncio.create_task(heartbeats())
+        while True:
+            msg = await ws.recv()
+            event = json.loads(msg)
+            if event.get("event") == "price":
+                print(event["symbol"], event["price"], event.get("day_volume"))
+asyncio.run(stream())
+Server-side constraints: up to 100 events from the client-side per connection; input message size ? 1 MB. (Server can send many messages back; this limit is about your event submissions.) 
+
+4) Error Handling (applies to all endpoints)
+* Standard error object: { code, message, status }. Implement structured handling. 
+* Common HTTP statuses and actions:
+o 400 Invalid params ? validate symbols/intervals before calling. 
+o 401 Bad/missing key ? check header or query. 
+o 403 Insufficient plan ? upgrade or drop feature. 
+o 404 Not found ? loosen filters. 
+o 429 Rate limit ? implement backoff/retry with jitter. 
+o 500 Server error ? retry later / contact support. 
+Retry pattern (exponential backoff):
+import time, random
+def backoff(attempt): time.sleep(min(30, (2**attempt) + random.random()))
+
+for attempt in range(6):
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 429 and attempt < 5:
+            backoff(attempt); continue
+        r.raise_for_status()
+        break
+    except requests.RequestException:
+        if attempt == 5: raise
+        backoff(attempt)
+
+5) Best Practices
+* Prefer header auth; keep keys out of URLs and source. 
+* Cache frequent lookups (symbol lists, exchanges, countries). 
+* Validate intervals/sizes before calling to avoid 400s.
+* Use /earliest_timestamp to bound historical pulls.
+* Batch when fetching many symbols — reduces overhead & simplifies rate management. 
+* Handle null fields defensively in JSON. 
+* Pre/Post: only set prepost=true on instruments/intervals that support it (US equities, specified intraday bars). 
+* WebSocket heartbeats and unsubscribe/reset events to maintain stable streams. 
+* Use timezone param if you need consistent timestamps across markets.
+
+6) Rate Limits & Plan Constraints (Pro)
+* Plan limits: Use /api_usage to read your current usage and plan limit counters programmatically. The dashboard is the canonical source for exact quotas. 
+* 429 handling: Backoff & retry; consider batching and caching to stay under limits. 
+* WebSocket (Pro+): Full access on Pro and above; Basic/Grow limited to one connection and up to 8 trial symbols; message size ? 1 MB and client-side “events sent” ? 100. 
+
+7) Quick Start Snippets (Copy/Paste)
+Get latest price (with header auth)
+import os, requests
+BASE = "https://api.twelvedata.com"
+h = {"Authorization": f"apikey {os.environ['TWELVEDATA_API_KEY']}"}
+price = requests.get(f"{BASE}/price", headers=h, params={"symbol":"AAPL"}, timeout=5).json()["price"]
+Pull 1-min OHLCV and compute VWAP
+import pandas as pd, numpy as np, requests, os
+h = {"Authorization": f"apikey {os.environ['TWELVEDATA_API_KEY']}"}
+r = requests.get("https://api.twelvedata.com/time_series", headers=h,
+                 params={"symbol":"MSFT","interval":"1min","outputsize":1000,"prepost":"true"}, timeout=20)
+df = pd.DataFrame(r.json()["values"]).astype({"open":float,"high":float,"low":float,"close":float,"volume":float})
+df["vwap"] = (df["close"]*df["volume"]).cumsum() / (df["volume"].cumsum())
+Find top US stock gainers today (Pro)
+params = {"direction":"gainers","outputsize":30,"country":"USA"}
+gainers = requests.get("https://api.twelvedata.com/market_movers/stocks",
+                       headers=h, params=params, timeout=10).json()["values"]
+Batch: timeseries + FX rate + conversion
+import json, requests
+body = {
+  "ts": {"url": "/time_series?symbol=AAPL&interval=1min&outputsize=2"},
+  "fx": {"url": "/exchange_rate?symbol=USD/JPY"},
+  "cc": {"url": "/currency_conversion?symbol=USD/JPY&amount=122"}
+}
+res = requests.post("https://api.twelvedata.com/batch", headers={**h,"Content-Type":"application/json"},
+                    data=json.dumps(body), timeout=30).json()["data"]
+WebSocket: subscribe + heartbeat
+# See full example in section N; send {"action":"heartbeat"} every ~10s
+# and {"action":"unsubscribe"} or {"action":"reset"} when done.
+
+8) Claude Code Tips
+* Keep your API key in an environment variable; in Claude Code terminals you can export TWELVEDATA_API_KEY=....
+* Prefer header auth, reuse a global HEADERS dict, and create small helpers for GET/POST.
+* For data science flows, convert arrays to pandas.DataFrame early; always cast numeric strings to floats.
+* Log HTTP status and code/message on failures for fast debugging.
+* Use batching for dashboard loads and WebSocket for real-time UIs.
+
+9) Endpoint Credit Costs (selected)
+* /time_series, /quote, /price, /eod, /api_usage: 1 credit per symbol/request. 
+* /market_movers/{market}: 100 credits per request (Pro+). 
+* WebSocket: billed per WebSocket credits (1 per symbol; API credits not used). 
+
+Final Notes
+* JSON is the default response format (CSV optional). Handle null fields robustly. 
+* Use your dashboard and /api_usage to track plan usage/limits. 
+</implementation_guide>
+

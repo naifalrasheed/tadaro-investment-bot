@@ -1,0 +1,54 @@
+# Exclude unnecessary files from Docker build context
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+.venv/
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite3
+
+# Testing files
+test_*.py
+*_test.py
+tests/
+
+# Git and version control
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation and images
+*.md
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.json
+
+# AWS and deployment files (already in container)
+AWS*
+*.pem
+*.key
+credentials*
+
+# Other
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -29,7 +29,9 @@
       "Bash(git commit:*)",
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(aws:*)",
+      "Read(//mnt/c/Users/alras/OneDrive/AI/**)"
     ],
     "deny": [],
     "ask": []

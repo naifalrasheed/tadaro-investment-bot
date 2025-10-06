@@ -722,14 +722,11 @@ def analyze():
             # Only use mock data as a last resort if all other methods fail
             print(f"Could not fetch data for {symbol}, falling back to mock data")
             # DISABLED: Mock data fallback - force failure instead
-                # # DISABLED: Last resort mock data
-                # # DISABLED: Mock data fallback - force failure instead
-                # # DISABLED: Last resort mock data
-                # results = stock_analyzer._get_mock_data(symbol)
-                results = None  # Fail rather than show fake data
-                results = None  # Force failure rather than fake data
-                results = None  # Fail rather than show fake data
-                results = None  # Force failure rather than fake data
+            # # DISABLED: Last resort mock data
+            # # DISABLED: Mock data fallback - force failure instead
+            # # DISABLED: Last resort mock data
+            # results = stock_analyzer._get_mock_data(symbol)
+            results = None  # Fail rather than show fake data
         
         if results:
             # Ensure all data is JSON-serializable

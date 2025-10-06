@@ -14,7 +14,7 @@ run:
     port: 8000
     env: PORT
   env:
-    # Application Configuration
+    # Application Configuration - Basic values only for GitHub source deployment
     - name: FLASK_APP
       value: app.py
     - name: ENVIRONMENT
@@ -25,29 +25,5 @@ run:
       value: "INFO"
     - name: PYTHONPATH
       value: "/opt/render/project/src"
-
-    # Parameters from Systems Manager Parameter Store
-    - name: GOOGLE_CLIENT_ID
-      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/google-client-id"
     - name: PORT
-      value-from: "arn:aws:ssm:us-east-1:593793060843:parameter/tadaro-investment-bot/port"
-
-    # API Keys from AWS Secrets Manager - Using exact ARNs with suffixes
-    - name: TWELVEDATA_API_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/twelvedata-api-key-JHgB8K"
-    - name: ALPHA_VANTAGE_API_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/ALPHA_VANTAGE_API_KEY-cQyuOF"
-    - name: CLAUDE_API_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/claude-api-key-lBp9wT"
-
-    # Database and Security
-    - name: DATABASE_URL
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/database-url-KZyTpF"
-    - name: SECRET_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key-mE3KzP"
-    - name: FLASK_SECRET_KEY
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/flask-secret-key-mE3KzP"
-
-    # Google OAuth
-    - name: GOOGLE_CLIENT_SECRET
-      value-from: "arn:aws:secretsmanager:us-east-1:593793060843:secret:tadaro-investment-bot/google-client-secret-pQr5sL"
+      value: "8000"
